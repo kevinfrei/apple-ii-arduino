@@ -1,10 +1,13 @@
-# arduino-appleii
+# Apple II Arduino
 
-Emulate the Apple II Microcomputer / 6502 on an Arduino Uno.
-To be used in conjuction with video generation code in my arduino-vga repository.
+This is forked from dpeckett's 6502/AppleII sim for an Arduino Uno. I'm going to
+try to get this working on a Teensy 4, which is MUCH faster than an Uno, with the
+silly goal of enabling Apple II mode *on my keyboard*. I love the idea of being
+able to play Karateka when I'm bored...
 
-Currently somewhere between 5 and 8 times slower than real hardware, however the
-arduino is maybe 16-32x the speed of the original mos6502 CPU. Should be possible
-to tighten things up and reach realtime.
+Mr. Peckett originally claimed that this is 5 to 8 times slower than real hardware
+but I'm betting on that Teensy 4 chip, it's already gonna be dramatically faster
+than realtime.
 
-Feel free to play arround!
+Progress: I forked the repo. I have bigger fish to fry, but I'll get back to this,
+I promise :D
