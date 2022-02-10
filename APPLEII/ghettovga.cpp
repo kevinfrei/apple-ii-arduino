@@ -11,10 +11,12 @@ void clearScreen() {
 }
 
 unsigned short row_to_addr(unsigned char row) {
+  // bits: 000a bcde =>  0x400 [0100 0000 0000] | [01cd eaba b000]
+  // Due to range, if !(a && b) is true
   unsigned short ab = (row >> 3) & 3;
   unsigned short cd = (row >> 1) & 3;
   unsigned short e = row & 1;
-  return (cd << 8) | (e << 7) | (ab << 5) | (ab << 3);
+  return 0x400 | (cd << 8) | (e << 7) | (ab << 5) | (ab << 3);
 }
 
 void screenScroll() {

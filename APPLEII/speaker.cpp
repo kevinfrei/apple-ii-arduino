@@ -7,6 +7,6 @@ void speaker_begin() {
 
 void speaker_toggle() {
   static boolean state = false;
-  state = (state)?false:true;
+  state = (state) ? false : true;
   digitalWrite(SPEAKER_PIN, state);
 }

@@ -11,7 +11,7 @@
 
 void cassette_header(unsigned short periods) {
   // Header Tone
-  for(int i = 0; i < periods*128; ++i) {
+  for (int i = 0; i < periods * 128; ++i) {
     digitalWrite(SPEAKER_PIN, HIGH);
     delayMicroseconds(650);
     digitalWrite(SPEAKER_PIN, LOW);
@@ -29,49 +29,49 @@ void cassette_header(unsigned short periods) {
 void cassette_write_byte(unsigned char val) {
   // Shift it out, MSB first
   digitalWrite(SPEAKER_PIN, HIGH);
-  delayMicroseconds((val&0x80) ? 500 : 250);  
+  delayMicroseconds((val & 0x80) ? 500 : 250);
   digitalWrite(SPEAKER_PIN, LOW);
-  delayMicroseconds((val&0x80) ? 500 : 250);
-  //bit 6
+  delayMicroseconds((val & 0x80) ? 500 : 250);
+  // bit 6
   digitalWrite(SPEAKER_PIN, HIGH);
-  delayMicroseconds((val&0x40) ? 500 : 250);  
+  delayMicroseconds((val & 0x40) ? 500 : 250);
   digitalWrite(SPEAKER_PIN, LOW);
-  delayMicroseconds((val&0x40) ? 500 : 250);
-  //bit 5
+  delayMicroseconds((val & 0x40) ? 500 : 250);
+  // bit 5
   digitalWrite(SPEAKER_PIN, HIGH);
-  delayMicroseconds((val&0x20) ? 500 : 250);  
+  delayMicroseconds((val & 0x20) ? 500 : 250);
   digitalWrite(SPEAKER_PIN, LOW);
-  delayMicroseconds((val&0x20) ? 500 : 250);
-  //bit 4
+  delayMicroseconds((val & 0x20) ? 500 : 250);
+  // bit 4
   digitalWrite(SPEAKER_PIN, HIGH);
-  delayMicroseconds((val&0x10) ? 500 : 250);  
+  delayMicroseconds((val & 0x10) ? 500 : 250);
   digitalWrite(SPEAKER_PIN, LOW);
-  delayMicroseconds((val&0x10) ? 500 : 250);
-  //bit 3
+  delayMicroseconds((val & 0x10) ? 500 : 250);
+  // bit 3
   digitalWrite(SPEAKER_PIN, HIGH);
-  delayMicroseconds((val&0x08) ? 500 : 250);  
+  delayMicroseconds((val & 0x08) ? 500 : 250);
   digitalWrite(SPEAKER_PIN, LOW);
-  delayMicroseconds((val&0x08) ? 500 : 250);
-  //bit 2
+  delayMicroseconds((val & 0x08) ? 500 : 250);
+  // bit 2
   digitalWrite(SPEAKER_PIN, HIGH);
-  delayMicroseconds((val&0x04) ? 500 : 250);  
+  delayMicroseconds((val & 0x04) ? 500 : 250);
   digitalWrite(SPEAKER_PIN, LOW);
-  delayMicroseconds((val&0x04) ? 500 : 250);  
-  //bit 1
+  delayMicroseconds((val & 0x04) ? 500 : 250);
+  // bit 1
   digitalWrite(SPEAKER_PIN, HIGH);
-  delayMicroseconds((val&0x02) ? 500 : 250);  
+  delayMicroseconds((val & 0x02) ? 500 : 250);
   digitalWrite(SPEAKER_PIN, LOW);
-  delayMicroseconds((val&0x02) ? 500 : 250);  
-  //bit 0
+  delayMicroseconds((val & 0x02) ? 500 : 250);
+  // bit 0
   digitalWrite(SPEAKER_PIN, HIGH);
-  delayMicroseconds((val&0x01) ? 500 : 250);  
+  delayMicroseconds((val & 0x01) ? 500 : 250);
   digitalWrite(SPEAKER_PIN, LOW);
-  delayMicroseconds((val&0x01) ? 500 : 250);
+  delayMicroseconds((val & 0x01) ? 500 : 250);
 }
 
 void cassette_write_block(unsigned short A1, unsigned short A2) {
   unsigned char checksum = 0xFF, val = 0;
-  for(unsigned short addr = A1; addr <= A2; ++addr) {
+  for (unsigned short addr = A1; addr <= A2; ++addr) {
     val = read8(addr);
     cassette_write_byte(val);
     checksum ^= val;
@@ -91,10 +91,12 @@ boolean cassette_read_state() {
   // get value
   short adc = (analogRead(CASSETTE_READ_PIN) - (short)cassette_center_voltage);
   // bias drift correction
-  cassette_center_voltage += adc*0.05f;
+  cassette_center_voltage += adc * 0.05f;
   // ~7mv hysteresis
-  if(zerocross_state && adc < -7) zerocross_state = false;
-  else if(!zerocross_state && adc > 7) zerocross_state = true;  
+  if (zerocross_state && adc < -7)
+    zerocross_state = false;
+  else if (!zerocross_state && adc > 7)
+    zerocross_state = true;
   return zerocross_state;
 }
 
@@ -104,10 +106,11 @@ short cassette_read_transition() {
   static boolean last = false;
   boolean cur = last;
   // loop until state transition
-  for(start_time = micros();cur == last;) cur = cassette_read_state();
+  for (start_time = micros(); cur == last;)
+    cur = cassette_read_state();
   // update transition tracking
   last = cur;
-  //return duration of transition us
+  // return duration of transition us
   return micros() - start_time;
 }
 
@@ -115,52 +118,56 @@ short cassette_read_transition() {
 boolean cassette_read_block(unsigned short A1, unsigned short A2) {
   short bitperiod;
   unsigned char val, checksum = 0xFF, datachecksum = 0x00;
-  
+
   // Calibrate the zero crossing detector
-  for(short i = 0; i < 10000; ++i) cassette_read_state();
-  
+  for (short i = 0; i < 10000; ++i)
+    cassette_read_state();
+
   // find tape in edge
   cassette_read_transition();
   cassette_read_transition();
-  
+
   // Small delay to allow things to settle
   delay(500);
-  
-  //wait for sync bit, short zero
-  while(cassette_read_transition() > 300);
-  
+
+  // wait for sync bit, short zero
+  while (cassette_read_transition() > 300)
+    ;
+
   // skip second cycle of sync bit
   cassette_read_transition();
-  
-  // start reading data  
-  for(unsigned short addr = A1; addr <= A2; ++addr) {
+
+  // start reading data
+  for (unsigned short addr = A1; addr <= A2; ++addr) {
     // zero our byte of memory
     val = 0;
-    for(unsigned char i = 8; i != 0; --i) {
+    for (unsigned char i = 8; i != 0; --i) {
       bitperiod = (cassette_read_transition() + cassette_read_transition()) / 2;
-      if(bitperiod > 300) val |= _BV(i-1);
+      if (bitperiod > 300)
+        val |= _BV(i - 1);
     }
     // write byte to memory
     write8(addr, val);
     // update checksum
     checksum ^= val;
   }
-  
+
   // Read checksum
-  for(unsigned char i = 8; i != 0; --i) {
+  for (unsigned char i = 8; i != 0; --i) {
     bitperiod = (cassette_read_transition() + cassette_read_transition()) / 2;
-    if(bitperiod > 300) datachecksum |= _BV(i-1);
+    if (bitperiod > 300)
+      datachecksum |= _BV(i - 1);
   }
-  
-  //return whether the data passes error checking
+
+  // return whether the data passes error checking
   return (datachecksum == checksum);
 }
 
 void cassette_begin() {
   // ADC prescale, 77khz
-  sbi(ADCSRA,ADPS2);
-  cbi(ADCSRA,ADPS1);
-  cbi(ADCSRA,ADPS0);
+  sbi(ADCSRA, ADPS2);
+  cbi(ADCSRA, ADPS1);
+  cbi(ADCSRA, ADPS0);
   // internal pullup on analog pin
   digitalWrite(CASSETTE_READ_PIN, HIGH);
   // use 1.1v internal analog reference
