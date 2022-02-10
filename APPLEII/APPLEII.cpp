@@ -26,8 +26,6 @@ All firmware is property of Apple Computer and is recreated here for
 historical purposes only.
 */
 
-#include <avr/pgmspace.h>
-
 void setup() {
   Serial.begin(115200);
   clearScreen();
@@ -35,8 +33,6 @@ void setup() {
   cassette_begin();
   keyboard_begin();
   sei();
+  init_machine();
 }
 
-void loop() {
-  run();
-}
