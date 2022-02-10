@@ -1,6 +1,9 @@
 ﻿// μ6502 - Barebones 6502 Emulator By Damian Peckett
 // dpeckett.com, <damian@pecke.tt>
 
+#include "hooks.h"
+#include "memory.h"
+
 // Address Modes
 #define AD_IMP 0x01
 #define AD_A 0x02
@@ -42,7 +45,7 @@
 
 // clang-format off
 // high nibble SR flags, low nibble address mode
-const unsigned char flags[] PROGMEM = {
+const unsigned char flags[] = {
 	AD_IMP, AD_INDX, UNDF, UNDF, UNDF, FL_ZN|AD_ZPG, FL_ZNC|AD_ZPG, UNDF, AD_IMP, FL_ZN|AD_IMM, FL_ZNC|AD_A, UNDF, UNDF, FL_ZN|AD_ABS, FL_ZNC|AD_ABS, UNDF,
 	AD_REL, FL_ZN|AD_INDY, UNDF, UNDF, UNDF, FL_ZN|AD_ZPGX, FL_ZNC|AD_ZPGX, UNDF, AD_IMP, FL_ZN|AD_ABSY, UNDF, UNDF, UNDF, FL_ZN|AD_ABSX, FL_ZNC|AD_ABSX, UNDF,
 	AD_ABS, FL_ZN|AD_INDX, UNDF, UNDF, FL_Z|AD_ZPG, FL_ZN|AD_ZPG, FL_ZNC|AD_ZPG, UNDF, AD_IMP, FL_ZN|AD_IMM, FL_ZNC|AD_A, UNDF, FL_Z|AD_ABS, FL_ZN|AD_ABS, FL_ZNC|AD_ABS, UNDF,

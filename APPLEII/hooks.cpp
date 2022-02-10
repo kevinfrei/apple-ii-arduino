@@ -1,3 +1,8 @@
+#include "cassette.h"
+#include "cpu.h"
+#include "memory.h"
+#include "screen.h"
+
 // Hook routines for the apple II monitor program
 // Used to trick the apple code into working on this hardware
 // Ideally should patch the ROM itself, will do in future.
@@ -20,7 +25,7 @@ void program_hooks(unsigned short addr) {
   // hook cassette read command
   else if (addr == 0xFEFD) {
     // Read Data Block
-    boolean success = cassette_read_block(read16(0x3C), read16(0x3E));
+    bool success = cassette_read_block(read16(0x3C), read16(0x3E));
     // Emulate counter behaviour
     write16(0x003C, read16(0x3E));
     if (success)

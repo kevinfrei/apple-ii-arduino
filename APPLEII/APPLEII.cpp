@@ -26,12 +26,19 @@ All firmware is property of Apple Computer and is recreated here for
 historical purposes only.
 */
 
+#include "cassette.h"
+#include "cpu.h"
+#include "keyboard.h"
+#include "memory.h"
+#include "screen.h"
+#include "speaker.h"
+
 void setup() {
   // Serial.begin(115200);
   clearScreen();
   speaker_begin();
   cassette_begin();
   keyboard_begin();
-  sei();
+  // sei();
   init_machine();
 }

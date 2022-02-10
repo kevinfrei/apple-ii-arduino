@@ -1,3 +1,5 @@
+#include "memory.h"
+
 // Share speaker pin for output
 #define CASSETTE_READ_PIN A5
 #define SPEAKER_PIN 5

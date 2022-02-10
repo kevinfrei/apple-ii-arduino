@@ -1,5 +1,5 @@
 // clang-format off
-const char fontInfo[] = {
+unsigned char fontInfo[] = {
 0b0011100,
 0b0100010,
 0b0101010,

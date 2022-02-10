@@ -1,17 +1,25 @@
+#include <memory>
+
+// TODO: Create the screen in "init screen"
+
+#define BLANK_CHAR 0x20
+
 void writeCharacter(unsigned char row, unsigned char col, unsigned char val) {
   // The memory has already been updated
   // TODO: This is just to update the visuals
+  uint8_t* chr = &fontInfo[val * 8];
+  tft.drawBitmap(col * 7, row * 8, chr, 7, 8, ST77XX_WHITE, ST77XX_BLACK);
 }
 
 void clearScreen() {
   for (unsigned char offs = 0; offs < 8; offs++) {
-    memset(&ram[0x400 + offs * 128], 0, 120);
+    memset(&ram[0x400 + offs * 128], BLANK_CHAR, 120); // Draw spaces everywhere
   }
-  // TODO: Update the visuals
+  tft.clearScreen(ST77XX_BLACK);
 }
 
 unsigned short row_to_addr(unsigned char row) {
-  // bits: 000a bcde =>  0x400 [0100 0000 0000] | [01cd eaba b000]
+  // bits: 000a bcde =>  0x400 | [00cd eaba b000]
   // Due to range, if !(a && b) is true
   unsigned short ab = (row >> 3) & 3;
   unsigned short cd = (row >> 1) & 3;
@@ -22,10 +30,15 @@ unsigned short row_to_addr(unsigned char row) {
 void screenScroll() {
   // move the memory while also updating the screen
   for (unsigned char row = 0; row < 24; row++) {
-    memcpy(&ram[row_to_addr(row)], &ram[row_to_addr(row+1), 40);
+    std::memcpy(&ram[row_to_addr(row)], &ram[row_to_addr(row + 1)], 40);
   }
-  memset(&ram[row_to_addr(23)], 0, 40);
-  // TODO: Update the visuals
+  std::memset(&ram[row_to_addr(23)], BLANK_CHAR, 40);
+  // TODO: Optimize this
+  for (unsigned char y = 0; y < 24; y++) {
+    for (unsigned char x = 0; x < 40; x++) {
+      writeCharacter(x, y, ram[row_to_addr(y) + x]);
+    }
+  }
 }
 
 void screenWrite(unsigned short address, unsigned char value) {
