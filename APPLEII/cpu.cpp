@@ -1,6 +1,8 @@
 ﻿// μ6502 - Barebones 6502 Emulator By Damian Peckett
 // dpeckett.com, <damian@pecke.tt>
+#include <Arduino.h>
 
+#include "screen.h"
 #include "hooks.h"
 #include "memory.h"
 
@@ -137,6 +139,7 @@ void init_machine() {
 }
 
 extern "C" void loop() {
+  showClock(millis());
   // Routines for hooking apple ][ monitor routines
   program_hooks(PC);
 

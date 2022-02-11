@@ -1,5 +1,6 @@
 #include <Adafruit_ST7789.h>
 #include <stdint.h>
+#include "Fonts/FreeSans18pt7b.h"
 
 #include "screen.h"
 #include "memory.h"
@@ -48,6 +49,7 @@ void init_screen() {
   // (72mhz also worked, but seemed to be the same speed)
   tft.setSPISpeed(60000000);
   tft.setRotation(1);
+  tft.setFont(&FreeSans18pt7b);
 }
 
 void clear_screen() {
@@ -100,4 +102,19 @@ void screenWrite(unsigned short address, unsigned char value) {
   // If not bell character
   if (value != 0x87)
     writeCharacter(row, col, value);
+}
+
+unsigned int total = 0;
+unsigned int lastMs = 0;
+char buffer[40];
+void showClock(unsigned int ms) {
+  total++;
+  if (lastMs / 1000 != ms / 1000) {
+    tft.fillRect(0, 0, 300, 30, ST77XX_BLACK);
+    tft.setCursor(40, 24);
+    sprintf(&buffer[0], "%d", total);
+    tft.print(buffer);
+    total = 0;
+    lastMs = ms;
+  }
 }
