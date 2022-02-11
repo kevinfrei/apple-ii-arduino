@@ -3,7 +3,7 @@
 #define KEYBD_DATA_PIN 4
 
 // clang-format off
-const unsigned char scancode_to_apple[] PROGMEM = {
+const unsigned char scancode_to_apple[] = {
  //$0    $1    $2    $3    $4    $5    $6    $7    $8    $9    $A    $B    $C    $D    $E    $F
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //$00
   0x00, 0x00, 0x00, 0x00, 0x00, 0xD1, 0xB1, 0x00, 0x00, 0x00, 0xDA, 0xD3, 0xC1, 0xD7, 0xB2, 0x00, //$10
@@ -28,7 +28,7 @@ const unsigned char scancode_to_apple[] PROGMEM = {
 // keyboard scan buffer
 unsigned short keyboard_data[3] = {0, 0, 0};
 unsigned char keyboard_buf_indx = 0, keyboard_mbyte = 0;
-boolean shift_enabled = false;
+bool shift_enabled = false;
 
 // In apple II scancode format
 volatile unsigned char keymem = 0;
@@ -43,12 +43,15 @@ void keyboard_strobe() {
 
 // clock must be on digital 3
 void keyboard_begin() {
+  /*
   pinMode(3, INPUT_PULLUP);
   pinMode(KEYBD_DATA_PIN, INPUT_PULLUP);
   attachInterrupt(1, keyboard_bit, FALLING);
+  */
 }
 
 void keyboard_bit() {
+  /*
   if (digitalRead(KEYBD_DATA_PIN))
     keyboard_data[2] |= _BV(keyboard_buf_indx);
   else
@@ -98,4 +101,5 @@ void keyboard_bit() {
     keyboard_data[1] = keyboard_data[2];
     keyboard_buf_indx = 0;
   }
+  */
 }

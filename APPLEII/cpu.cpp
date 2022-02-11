@@ -119,8 +119,10 @@ void push8(unsigned char pushval) {
 }
 
 unsigned short pull16() {
-  value16 = read8(STP_BASE + (++STP)) |
-            ((unsigned short)read8(STP_BASE + (++STP)) << 8);
+  unsigned char st1 = ++STP;
+  unsigned char st2 = ++STP;
+  value16 = ((unsigned short)read8(STP_BASE + st1)) |
+            ((unsigned short)read8(STP_BASE + st2) << 8);
   return value16;
 }
 
@@ -134,7 +136,7 @@ void init_machine() {
   STP = 0xFD;
 }
 
-void loop() {
+extern "C" void loop() {
   // Routines for hooking apple ][ monitor routines
   program_hooks(PC);
 

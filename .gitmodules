@@ -1,0 +1,12 @@
+[submodule "APPLEII/libs/GenMakefile"]
+	path = APPLEII/libs/GenMakefile
+	url = https://github.com/kevinfrei/Arduino2Make.git
+[submodule "APPLEII/libs/GFX"]
+	path = APPLEII/libs/GFX
+	url = https://github.com/adafruit/Adafruit-GFX-Library.git
+[submodule "APPLEII/libs/BusIO"]
+	path = APPLEII/libs/BusIO
+	url = https://github.com/adafruit/Adafruit_BusIO.git
+[submodule "APPLEII/libs/ST77XX"]
+	path = APPLEII/libs/ST77XX
+	url = https://github.com/adafruit/Adafruit-ST7735-Library.git

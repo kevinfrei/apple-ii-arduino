@@ -25,17 +25,18 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 All firmware is property of Apple Computer and is recreated here for
 historical purposes only.
 */
+#include <stdint.h>
 
 #include "cassette.h"
 #include "cpu.h"
-#include "keyboard.h"
+#include "kbdemu.h"
 #include "memory.h"
 #include "screen.h"
 #include "speaker.h"
 
-void setup() {
+extern "C" void setup() {
   // Serial.begin(115200);
-  clearScreen();
+  clear_screen();
   speaker_begin();
   cassette_begin();
   keyboard_begin();

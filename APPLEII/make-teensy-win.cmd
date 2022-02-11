@@ -1,0 +1,1 @@
+node libs\Arduino2Make\ar2mak.js C:\PROGRA~2\Arduino\hardware\teensy\avr libs/GFX libs/ST77XX libs/BusIO > teensy-win.inc

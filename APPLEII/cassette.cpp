@@ -12,6 +12,7 @@
 #endif
 
 void cassette_header(unsigned short periods) {
+  #if 0
   // Header Tone
   for (int i = 0; i < periods * 128; ++i) {
     digitalWrite(SPEAKER_PIN, HIGH);
@@ -26,9 +27,11 @@ void cassette_header(unsigned short periods) {
   // 2000 hz
   digitalWrite(SPEAKER_PIN, LOW);
   delayMicroseconds(250);
+  #endif
 }
 
 void cassette_write_byte(unsigned char val) {
+  #if 0
   // Shift it out, MSB first
   digitalWrite(SPEAKER_PIN, HIGH);
   delayMicroseconds((val & 0x80) ? 500 : 250);
@@ -69,9 +72,11 @@ void cassette_write_byte(unsigned char val) {
   delayMicroseconds((val & 0x01) ? 500 : 250);
   digitalWrite(SPEAKER_PIN, LOW);
   delayMicroseconds((val & 0x01) ? 500 : 250);
+  #endif
 }
 
 void cassette_write_block(unsigned short A1, unsigned short A2) {
+  #if 0
   unsigned char checksum = 0xFF, val = 0;
   for (unsigned short addr = A1; addr <= A2; ++addr) {
     val = read8(addr);
@@ -83,13 +88,15 @@ void cassette_write_block(unsigned short A1, unsigned short A2) {
   digitalWrite(SPEAKER_PIN, HIGH);
   delay(10);
   digitalWrite(SPEAKER_PIN, LOW);
+  #endif
 }
 
 // Used to track center voltage
 float cassette_center_voltage = 512;
 // implement zero crossing detector
-boolean cassette_read_state() {
-  static boolean zerocross_state = false;
+bool cassette_read_state() {
+  #if 0
+  static bool zerocross_state = false;
   // get value
   short adc = (analogRead(CASSETTE_READ_PIN) - (short)cassette_center_voltage);
   // bias drift correction
@@ -100,13 +107,16 @@ boolean cassette_read_state() {
   else if (!zerocross_state && adc > 7)
     zerocross_state = true;
   return zerocross_state;
+  #endif 
+  return true;
 }
 
 // figure out the duration of zero crossing
 short cassette_read_transition() {
+  #if 0
   unsigned long start_time;
-  static boolean last = false;
-  boolean cur = last;
+  static bool last = false;
+  bool cur = last;
   // loop until state transition
   for (start_time = micros(); cur == last;)
     cur = cassette_read_state();
@@ -114,10 +124,13 @@ short cassette_read_transition() {
   last = cur;
   // return duration of transition us
   return micros() - start_time;
+  #endif
+  return 10;
 }
 
 // Based loosely on steve wozniaks original algorithm
-boolean cassette_read_block(unsigned short A1, unsigned short A2) {
+bool cassette_read_block(unsigned short A1, unsigned short A2) {
+  #if 0
   short bitperiod;
   unsigned char val, checksum = 0xFF, datachecksum = 0x00;
 
@@ -163,9 +176,12 @@ boolean cassette_read_block(unsigned short A1, unsigned short A2) {
 
   // return whether the data passes error checking
   return (datachecksum == checksum);
+  #endif
+  return true;
 }
 
 void cassette_begin() {
+  #if 0
   // ADC prescale, 77khz
   sbi(ADCSRA, ADPS2);
   cbi(ADCSRA, ADPS1);
@@ -174,4 +190,5 @@ void cassette_begin() {
   digitalWrite(CASSETTE_READ_PIN, HIGH);
   // use 1.1v internal analog reference
   analogReference(INTERNAL);
+  #endif
 }

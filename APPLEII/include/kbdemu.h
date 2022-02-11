@@ -1,3 +1,5 @@
+#pragma once
+
 unsigned char keyboard_read();
 void keyboard_strobe();
 void keyboard_begin();
