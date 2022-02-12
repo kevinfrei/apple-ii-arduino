@@ -146,9 +146,22 @@ bufRect lastTm = {0};
 volatile unsigned char keymem = 0;
 bool flash = false;
 unsigned char key_index = 0;
-const char to_type[] = "CALL -151\r400.41F\r0G\r"
-"10 PRINT \"SNAKE!!\";\r"
-"20 GOTO 10\r"
+const char to_type[] = "CALL -151\r400.7FF\r0G\r"
+"0G\r"
+"0G\r"
+"0G\r"
+"0G\r"
+"0G\r"
+"0G\r"
+"0G\r"
+"0G\r"
+"0G\r"
+"0G\r"
+"0G\r"
+"0G\r"
+"0G\r"
+"0 PRINT \"SNAKE! \";\r"
+"10 GOTO 0\r"
 "RUN\r";
 const unsigned int num_chars = sizeof(to_type)/sizeof(char);
 unsigned int kb_count = 0;

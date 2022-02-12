@@ -32,7 +32,8 @@ const uint16_t beige = 0b1100011001110001;
 const uint16_t amber = 0b1111110110000000;
 const uint16_t green = 0b0011011111100110;
 
-const uint16_t theColor = green;
+uint16_t theColor = green; // ST77XX_WHITE
+const bool rotateColors = false;
 
 void writeCharacter(unsigned char row, unsigned char col, unsigned char val) {
   if (row > 23 || col > 39)
@@ -71,7 +72,7 @@ void clear_screen() {
   for (unsigned char offs = 0; offs < 8; offs++) {
     memset(&ram[0x400 + offs * 128], BLANK_CHAR, 120); // Draw spaces everywhere
   }
-  tft.fillRect(16, 20, 288, 200, ST77XX_BLACK);
+  tft.fillRect(12, 16, 296, 208, ST77XX_BLACK);
 }
 
 unsigned short row_to_addr(unsigned char row) {
@@ -83,8 +84,8 @@ unsigned short row_to_addr(unsigned char row) {
   return 0x400 | (cd << 8) | (e << 7) | (ab << 5) | (ab << 3);
 }
 
-// This is reasonably well optimized. It could be further optimized by batching the
-// writeCharacter calls into bigger bitmap writes...
+// This is reasonably well optimized. It could be further optimized by batching
+// the writeCharacter calls into bigger bitmap writes...
 void screenScroll() {
   // move the memory while also updating the screen
   unsigned int topRow = row_to_addr(0);
@@ -174,13 +175,27 @@ void debug_info(unsigned int ms) {
       drawHex("sr.%02x", 244, 26, SR, &oSR);
     }
   }
-  if (ms - lastMs >= 1000) {
+  if (ms - lastMs >= 3000) {
     lastMs = ms;
     // unsigned int now = micros();
     // drawHex("IPS: %d", 2, 26, total, &oldIPS);
     // unsigned int elapsed = micros() - now;
     // drawHex("draw %d", 2, 26, elapsed, &oldIPS);
     total = 0;
+    if (rotateColors) {
+      switch ((ms / 3000) % 3) {
+        case 0:
+          theColor = ST77XX_WHITE;
+          break;
+        case 1:
+          theColor = amber;
+          break;
+        default:
+        case 2:
+          theColor = green;
+          break;
+      }
+    }
   }
   total++;
 }
