@@ -1,9 +1,10 @@
 #include <Adafruit_ST7789.h>
 #include <stdint.h>
-#include "Fonts/FreeSans18pt7b.h"
 
-#include "screen.h"
+#include "Fonts/FreeSans12pt7b.h"
+#include "cpu.h"
 #include "memory.h"
+#include "screen.h"
 
 #define ADAFRUIT_2_0
 // #define ADAFRUIT_1_13
@@ -27,12 +28,25 @@ void set_backlight(bool turnOn) {
 // TODO: Create the screen in "init screen"
 
 #define BLANK_CHAR 0x20
-
+int charCount = 0;
+uint8_t buf[8];
 void writeCharacter(unsigned char row, unsigned char col, unsigned char val) {
+  charCount++;
+  if (row > 23 || col > 39)
+    return;
   // The memory has already been updated
   // TODO: This is just to update the visuals
   uint8_t* chr = &fontInfo[val * 8];
-  tft.drawBitmap(20 + col * 7, 24 + row * 8, chr, 7, 8, ST77XX_WHITE, ST77XX_BLACK);
+  uint8_t buf[8];
+  for (int i = 0; i < 8; i++) {
+    uint8_t b = chr[i];
+    uint8_t d = ((b & 1) << 7) | ((b & 2) << 5) | ((b & 4) << 3) |
+                ((b & 8) << 1) | ((b & 16) >> 1) | ((b & 32) >> 3) |
+                ((b & 64) >> 5) | ((b & 127) >> 7);
+    buf[i] = d;
+  }
+  tft.drawBitmap(
+    20 + col * 7, 48 + row * 8, buf, 7, 8, ST77XX_BLACK, ST77XX_WHITE);
 }
 
 void init_screen() {
@@ -49,7 +63,7 @@ void init_screen() {
   // (72mhz also worked, but seemed to be the same speed)
   tft.setSPISpeed(60000000);
   tft.setRotation(1);
-  tft.setFont(&FreeSans18pt7b);
+  tft.setFont(&FreeSans12pt7b);
 }
 
 void clear_screen() {
@@ -104,17 +118,60 @@ void screenWrite(unsigned short address, unsigned char value) {
     writeCharacter(row, col, value);
 }
 
+char buffer[40];
+struct bufRect {
+  short x1, y1;
+  unsigned short w, h;
+};
+
+void drawHex(const char* fmt,
+             unsigned short x,
+             unsigned short y,
+             unsigned short val,
+             bufRect* oldBuf) {
+  sprintf(buffer, fmt, val);
+  short x1, y1;
+  unsigned short w, h;
+  tft.getTextBounds(buffer, x, y, &x1, &y1, &w, &h);
+  tft.fillRect(oldBuf->x1, oldBuf->y1, oldBuf->w, oldBuf->h, ST77XX_BLACK);
+  *oldBuf = {x1, y1, w, h};
+  tft.setCursor(x, y);
+  tft.print(buffer);
+}
+
+bufRect oA = {0}, oX = {0}, oY = {0}, oPC = {0}, oSR = {0}, oldIPS = {0};
 unsigned int total = 0;
 unsigned int lastMs = 0;
-char buffer[40];
-void showClock(unsigned int ms) {
-  total++;
-  if (lastMs / 1000 != ms / 1000) {
-    tft.fillRect(0, 0, 300, 30, ST77XX_BLACK);
-    tft.setCursor(40, 24);
-    sprintf(&buffer[0], "%d", total);
-    tft.print(buffer);
-    total = 0;
-    lastMs = ms;
+unsigned char oldA = 0, oldSTP = 0, oldX = 0, oldY = 0, oldSR = 0;
+unsigned char oldPC = 0;
+void debug_info(unsigned int ms) {
+  if (false && (oldA != A || oldX != X || oldY != Y)) {
+    if (PC != oldPC) {
+      oldPC = PC;
+      drawHex("pc.%04X", 2, 26, PC, &oPC);
+    }
+    if (A != oldA) {
+      oldA = A;
+      drawHex("a.%02X", 98, 26, A, &oA);
+    }
+    if (X != oldX) {
+      oldX = X;
+      drawHex("x.%02x", 150, 26, X, &oX);
+    }
+    if (Y != oldY) {
+      oldY = Y;
+      drawHex("y.%02x", 197, 26, Y, &oY);
+    }
+    if (SR != oldSR) {
+      oldSR = SR;
+      drawHex("sr.%02x", 244, 26, SR, &oSR);
+    }
   }
+  if (ms - lastMs >= 1000) {
+    lastMs = ms;
+    drawHex("CPS: %d", 2, 26, charCount, &oldIPS);
+    charCount = 0;
+    total = 0;
+  }
+  total++;
 }

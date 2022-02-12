@@ -139,7 +139,7 @@ void init_machine() {
 }
 
 extern "C" void loop() {
-  showClock(millis());
+  debug_info(millis());
   // Routines for hooking apple ][ monitor routines
   program_hooks(PC);
 
