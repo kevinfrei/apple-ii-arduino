@@ -27,26 +27,25 @@ void set_backlight(bool turnOn) {
 
 // TODO: Create the screen in "init screen"
 
-#define BLANK_CHAR 0x20
-int charCount = 0;
-uint8_t buf[8];
+#define BLANK_CHAR 0xA0
+const uint16_t beige = 0b1100011001110001;
+const uint16_t amber = 0b1111110110000000;
+const uint16_t green = 0b0011011111100110;
+
+const uint16_t theColor = green;
+
 void writeCharacter(unsigned char row, unsigned char col, unsigned char val) {
-  charCount++;
   if (row > 23 || col > 39)
     return;
   // The memory has already been updated
-  // TODO: This is just to update the visuals
-  uint8_t* chr = &fontInfo[val * 8];
-  uint8_t buf[8];
-  for (int i = 0; i < 8; i++) {
-    uint8_t b = chr[i];
-    uint8_t d = ((b & 1) << 7) | ((b & 2) << 5) | ((b & 4) << 3) |
-                ((b & 8) << 1) | ((b & 16) >> 1) | ((b & 32) >> 3) |
-                ((b & 64) >> 5) | ((b & 127) >> 7);
-    buf[i] = d;
-  }
-  tft.drawBitmap(
-    20 + col * 7, 48 + row * 8, buf, 7, 8, ST77XX_BLACK, ST77XX_WHITE);
+  // Just update the visuals
+  tft.drawBitmap(20 + col * 7,
+                 24 + row * 8,
+                 &fontInfo[val * 8],
+                 7,
+                 8,
+                 ST77XX_BLACK,
+                 theColor);
 }
 
 void init_screen() {
@@ -61,9 +60,10 @@ void init_screen() {
 #endif
   // This is the fastest speed that worked
   // (72mhz also worked, but seemed to be the same speed)
-  tft.setSPISpeed(60000000);
+  tft.setSPISpeed(72000000);
   tft.setRotation(1);
   tft.setFont(&FreeSans12pt7b);
+  tft.fillScreen(beige);
 }
 
 void clear_screen() {
@@ -71,7 +71,7 @@ void clear_screen() {
   for (unsigned char offs = 0; offs < 8; offs++) {
     memset(&ram[0x400 + offs * 128], BLANK_CHAR, 120); // Draw spaces everywhere
   }
-  tft.fillScreen(ST77XX_BLACK);
+  tft.fillRect(16, 20, 288, 200, ST77XX_BLACK);
 }
 
 unsigned short row_to_addr(unsigned char row) {
@@ -83,16 +83,27 @@ unsigned short row_to_addr(unsigned char row) {
   return 0x400 | (cd << 8) | (e << 7) | (ab << 5) | (ab << 3);
 }
 
+// This is reasonably well optimized. It could be further optimized by batching the
+// writeCharacter calls into bigger bitmap writes...
 void screenScroll() {
   // move the memory while also updating the screen
-  for (unsigned char row = 0; row < 24; row++) {
-    memcpy(&ram[row_to_addr(row)], &ram[row_to_addr(row + 1)], 40);
+  unsigned int topRow = row_to_addr(0);
+  for (unsigned char row = 0; row < 23; row++) {
+    unsigned int nxtRow = row_to_addr(row + 1);
+    for (unsigned char col = 0; col < 40; col++) {
+      unsigned char c = ram[nxtRow + col];
+      if (ram[topRow + col] != c) {
+        ram[topRow + col] = c;
+        writeCharacter(row, col, c);
+      }
+    }
+    topRow = nxtRow;
   }
-  memset(&ram[row_to_addr(23)], BLANK_CHAR, 40);
-  // TODO: Optimize this
-  for (unsigned char y = 0; y < 24; y++) {
-    for (unsigned char x = 0; x < 40; x++) {
-      writeCharacter(y, x, ram[row_to_addr(y) + x]);
+  for (unsigned char col = 0; col < 40; col++) {
+    unsigned char c = ram[topRow + col];
+    if (c != BLANK_CHAR) {
+      ram[topRow + col] = BLANK_CHAR;
+      writeCharacter(23, col, BLANK_CHAR);
     }
   }
 }
@@ -119,10 +130,6 @@ void screenWrite(unsigned short address, unsigned char value) {
 }
 
 char buffer[40];
-struct bufRect {
-  short x1, y1;
-  unsigned short w, h;
-};
 
 void drawHex(const char* fmt,
              unsigned short x,
@@ -169,8 +176,10 @@ void debug_info(unsigned int ms) {
   }
   if (ms - lastMs >= 1000) {
     lastMs = ms;
-    drawHex("CPS: %d", 2, 26, charCount, &oldIPS);
-    charCount = 0;
+    // unsigned int now = micros();
+    // drawHex("IPS: %d", 2, 26, total, &oldIPS);
+    // unsigned int elapsed = micros() - now;
+    // drawHex("draw %d", 2, 26, elapsed, &oldIPS);
     total = 0;
   }
   total++;

@@ -2085,10 +2085,10 @@ unsigned short read16(unsigned short address) {
 void write8(unsigned short address, unsigned char value) {
   unsigned char page = address >> 8;
   if (page < 0xC0) {
-    ram[address] = value;
-    if (page >= 0x04 && page < 0x08) {
+    if (page >= 0x04 && page < 0x08 && ram[address] != value) {
       screenWrite(address, value);
     }
+    ram[address] = value;
   } else {
     // Keyboard Strobe
     if (address == 0xC010)

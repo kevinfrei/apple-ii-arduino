@@ -1,6 +1,5 @@
 # Some simple details
 ifeq ($(OS),Windows_NT)
-  $(error Windows not tested yet)
 	ARD=${HOME}/AppData/Local
 	SERIAL_PORT=COM8
 	RUNTIME_HARDWARE_PATH=c:/PROGRA~2/Arduino/hardware/tools
@@ -15,9 +14,10 @@ else
   $(error Linux support not tested yet)
 endif
 
-IN_SPEED=150
+# Can be 816, but it gets a little warm: it's definitely faster, though!
+IN_SPEED=600
 IN_USB=serialhid
-IN_OPT=osstd
+IN_OPT=o3std
 IN_KEYS=en-us
 EXTRA_TIME_LOCAL=0
 BOARD_NAME=teensy40
@@ -29,7 +29,7 @@ PROJ_NAME=apple2
 BUILD_PATH=out
 
 # My custom flags
-COMPILER_CPP_EXTRA_FLAGS=-DDEBUG=1
+COMPILER_CPP_EXTRA_FLAGS=
 
 USER_INCLUDES=-Iinclude
 USER_CPP_SRCS=APPLEII.cpp cassette.cpp cpu.cpp font.cpp hooks.cpp kbdemu.cpp memory.cpp screen.cpp speaker.cpp
