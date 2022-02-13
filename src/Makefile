@@ -13,9 +13,9 @@ else ifeq ($(shell uname -s), Darwin)
 else
   $(error Linux support not tested yet)
 endif
-# Default: 600. Also okay: 24, 15, 396, 450, 528, 720, 816
+# Default: 600. Also okay: 24, 150, 396, 450, 528, 720, 816
 # Require cooling: 912, 960, 1008 (anything above 600 gets kinda warm)
-IN_SPEED=720
+IN_SPEED=816
 IN_USB=serialhid
 IN_OPT=o3std
 IN_KEYS=en-us

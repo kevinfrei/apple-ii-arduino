@@ -146,7 +146,7 @@ bufRect lastTm = {0};
 volatile unsigned char keymem = 0;
 bool flash = false;
 unsigned char key_index = 0;
-const char to_type[] = "CALL -151\r400.7FF\r0G\r"
+const char to_type[] = "CALL -151\r400.47F\r0G\r"
 "0G\r"
 "0G\r"
 "0G\r"
@@ -157,10 +157,7 @@ const char to_type[] = "CALL -151\r400.7FF\r0G\r"
 "0G\r"
 "0G\r"
 "0G\r"
-"0G\r"
-"0G\r"
-"0G\r"
-"0 PRINT \"SNAKE! \";\r"
+"0 PRINT \"SNAKE_ \";\r"
 "10 GOTO 0\r"
 "RUN\r";
 const unsigned int num_chars = sizeof(to_type)/sizeof(char);
@@ -170,7 +167,7 @@ unsigned int last_kb = 0;
 unsigned char keyboard_read() {
   unsigned int ms = millis();
   kb_count++;
-  if (ms - last_kb > 150) {
+  if (ms - last_kb > 250) {
     // If we've hit 15 seconds, type 'CALL -151<cr>
     last_kb = ms;
     if (key_index < num_chars) {

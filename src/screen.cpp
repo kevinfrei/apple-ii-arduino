@@ -14,7 +14,12 @@ const uint8_t BACKLIGHT_PIN = 17;
 const uint8_t TFT_CS = 8;
 const uint8_t TFT_DC = 15;
 const uint8_t TFT_RST = 6;
+// This is the fastest speed that worked
+// I can turn it up to 72MHz, but that doesn't seem any faster :/
+const uint32_t SPI_SPEED = 60000000;
 
+// TODO: Make this behave better. Batching updates would probably really improve
+// performance
 Adafruit_ST7789 tft(TFT_CS, TFT_DC, TFT_RST);
 boolean backlight_on = false;
 
@@ -25,15 +30,46 @@ void set_backlight(bool turnOn) {
   }
 }
 
-// TODO: Create the screen in "init screen"
-
 #define BLANK_CHAR 0xA0
+//                       RRRRRGGGGGGBBBBB
 const uint16_t beige = 0b1100011001110001;
 const uint16_t amber = 0b1111110110000000;
 const uint16_t green = 0b0011011111100110;
 
 uint16_t theColor = green; // ST77XX_WHITE
 const bool rotateColors = false;
+
+unsigned char blit[35 * 192];
+
+void clearBuffer() {
+  memset(blit, 0xff, 35 * 192);
+}
+
+void drawCharacter(unsigned char row, unsigned char col, unsigned char val) {
+  if (row > 23 || col > 39) {
+    return;
+  }
+  uint8_t* charInfo = &fontInfo[val * 8];
+  uint16_t colOfs = col * 7;
+  uint8_t byteOfs = colOfs / 8;
+  uint8_t bitOfs = colOfs % 8;
+  uint8_t mask1 = (bitOfs > 0) ? 0xFF << (8 - bitOfs) : 1;
+  uint8_t mask2 = (bitOfs > 1) ? 0xFF >> (bitOfs - 1) : 0;
+  for (int i = 0; i < 8; i++) {
+    char init = blit[35 * (row * 8 + i) + byteOfs];
+    init = (init & mask1) | (charInfo[i] >> bitOfs);
+    blit[35 * (row * 8 + i) + byteOfs] = init;
+    if (mask2) {
+      init = blit[35 * (row * 8 + i) + 1 + byteOfs];
+      init = (init & mask2) | (charInfo[i] << (8 - bitOfs));
+      blit[35 * (row * 8 + i) + 1 + byteOfs] = init;
+    }
+  }
+}
+
+void blitBuffer() {
+  tft.drawBitmap(20, 24, blit, 280, 192, ST77XX_BLACK, theColor);
+}
 
 void writeCharacter(unsigned char row, unsigned char col, unsigned char val) {
   if (row > 23 || col > 39)
@@ -59,9 +95,7 @@ void init_screen() {
 #else
 #error Sorry, you need to pick a screen
 #endif
-  // This is the fastest speed that worked
-  // (72mhz also worked, but seemed to be the same speed)
-  tft.setSPISpeed(72000000);
+  tft.setSPISpeed(SPI_SPEED);
   tft.setRotation(1);
   tft.setFont(&FreeSans12pt7b);
   tft.fillScreen(beige);
@@ -84,10 +118,11 @@ unsigned short row_to_addr(unsigned char row) {
   return 0x400 | (cd << 8) | (e << 7) | (ab << 5) | (ab << 3);
 }
 
-// This is reasonably well optimized. It could be further optimized by batching
-// the writeCharacter calls into bigger bitmap writes...
+bufRect st = {0};
+
 void screenScroll() {
   // move the memory while also updating the screen
+  uint32_t start = micros();
   unsigned int topRow = row_to_addr(0);
   for (unsigned char row = 0; row < 23; row++) {
     unsigned int nxtRow = row_to_addr(row + 1);
@@ -107,6 +142,32 @@ void screenScroll() {
       writeCharacter(23, col, BLANK_CHAR);
     }
   }
+  uint32_t scrollTime = micros() - start;
+  drawHex("%d", 140, 17, scrollTime, &st);
+}
+
+// This is reasonably well optimized. It could be further optimized by batching
+// the writeCharacter calls into bigger bitmap writes...
+void screenScrollBlit() {
+  // move the memory while also updating the screen
+  uint32_t start = micros();
+  clearBuffer();
+  unsigned int topRow = row_to_addr(0);
+  for (unsigned char row = 0; row < 23; row++) {
+    unsigned int nxtRow = row_to_addr(row + 1);
+    for (unsigned char col = 0; col < 40; col++) {
+      unsigned char c = ram[nxtRow + col];
+      if (ram[topRow + col] != c) {
+        ram[topRow + col] = c;
+      }
+      drawCharacter(row, col, c);
+    }
+    topRow = nxtRow;
+  }
+  memset(&ram[topRow], BLANK_CHAR, 40);
+  blitBuffer();
+  uint32_t scrollTime = micros() - start;
+  drawHex("%d", 140, 17, scrollTime, &st);
 }
 
 void screenWrite(unsigned short address, unsigned char value) {
@@ -129,13 +190,12 @@ void screenWrite(unsigned short address, unsigned char value) {
   if (value != 0x87)
     writeCharacter(row, col, value);
 }
-
 char buffer[40];
 
 void drawHex(const char* fmt,
              unsigned short x,
              unsigned short y,
-             unsigned short val,
+             unsigned int val,
              bufRect* oldBuf) {
   sprintf(buffer, fmt, val);
   short x1, y1;
