@@ -103,13 +103,26 @@ void split_graphics() {
 // the old and new bitmaps, then trims the bitmap to be the minimal size while
 // keeping the screen correct. I can get up to about 11FPS for a full screen
 // scroll with different characters
-inline void getDelta(uint8_t* upd,
-                     uint8_t* old,
-                     uint16_t* x,
-                     uint16_t* y,
-                     uint16_t* w,
-                     uint16_t* h,
-                     uint8_t* out) {
+inline bool trimChar(uint8_t* upd, uint8_t* old, uint8_t* out) {
+  // For speed, just check for the outer edges, and the bottom row
+  if ((upd[0] & 0x83) == (old[0] & 0x83) &&
+      (upd[1] & 0x83) == (old[1] & 0x83) &&
+      (upd[2] & 0x83) == (old[2] & 0x83) &&
+      (upd[3] & 0x83) == (old[3] & 0x83) &&
+      (upd[4] & 0x83) == (old[4] & 0x83) &&
+      (upd[5] & 0x83) == (old[5] & 0x83) &&
+      (upd[6] & 0x83) == (old[6] & 0x83) && (upd[7] == old[7])) {
+    out[0] = upd[0] << 1;
+    out[1] = upd[1] << 1;
+    out[2] = upd[2] << 1;
+    out[3] = upd[3] << 1;
+    out[4] = upd[4] << 1;
+    out[5] = upd[5] << 1;
+    out[6] = upd[6] << 1;
+    return true;
+  }
+  return false;
+  /* Adaptive trimming code, fully tested, below:
   uint8_t tmp[8];
   for (uint8_t yo = 0; yo < 8; yo++) {
     tmp[yo] = upd[yo] ^ old[yo];
@@ -162,6 +175,7 @@ inline void getDelta(uint8_t* upd,
   *y = 24 + ys;
   *w = xe - xs;
   *h = ye - ys;
+ */
 }
 
 void writeCharacter(uint8_t row, uint8_t col, uint8_t val, uint8_t prev) {
@@ -171,12 +185,19 @@ void writeCharacter(uint8_t row, uint8_t col, uint8_t val, uint8_t prev) {
   }
   if (textMode || (splitMode && row >= 20)) {
     // Let's try to minimize the amount of bitmap updating
-    uint8_t tmp[8];
-    uint16_t w, h, x, y;
-    getDelta(&fontInfo[val * 8], &fontInfo[prev * 8], &x, &y, &w, &h, tmp);
-    if (h && w) {
+    uint8_t out[7];
+    bool trimmed = trimChar(&fontInfo[val * 8], &fontInfo[prev * 8], &out[0]);
+    if (trimmed) {
       tft.drawBitmap(
-        col * 7 + x, row * 8 + y, tmp, w, h, ST77XX_BLACK, theColor);
+        col * 7 + 21, row * 8 + 24, out, 5, 7, ST77XX_BLACK, theColor);
+    } else {
+      tft.drawBitmap(col * 7 + 20,
+                     row * 8 + 24,
+                     &fontInfo[val * 8],
+                     7,
+                     8,
+                     ST77XX_BLACK,
+                     theColor);
     }
   } else if (lowRes) {
     if ((val & 0xF) != (prev & 0xF)) {
