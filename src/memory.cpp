@@ -2054,7 +2054,7 @@ const unsigned char rom[] = {
 0x83,0x7f,0x5d,0xcc,0xb5,0xfc,0x17,0x17,
 0xf5,0x03,0xfb,0x03,0x62,0xfa,0x40,0xfa
 };
-// clang-format off
+// clang-format on
 
 unsigned char ram[0xC000];
 
@@ -2062,19 +2062,41 @@ unsigned char read8(unsigned short address) {
   unsigned char page = address >> 8;
   if (page < 0xC0) {
     return ram[address];
-  } 
-  if (address > 0xC030)
+  }
+  if (address > 0xC080)
     return rom[address - 0xC000];
-  // Keyboard Data
-  if (address == 0xC000)
-    return keyboard_read();
-  // Keyboard Strobe
-  if (address == 0xC010)
-    keyboard_strobe();
-  // Speaker toggle
-  if (address == 0xC030)
-    speaker_toggle();
-  return 0;  
+  switch (address) {
+    // Keyboard Data
+    case 0xC000:
+      return keyboard_read();
+    // Keyboard Strobe
+    case 0xC010:
+      keyboard_strobe();
+      break;
+    // Speaker toggle
+    case 0xC030:
+      speaker_toggle();
+      break;
+    case 0xC050:
+      show_graphics();
+      break;
+    case 0xC051:
+      show_text();
+      break;
+    case 0xC052: // full gfx
+      full_graphics();
+      break;
+    case 0xC053: // split gfx/text
+      split_graphics();
+      break;
+    case 0xC056:
+      show_lores();
+      break;
+    case 0xC057:
+      show_hires();
+      break;
+  }
+  return 0;
 }
 
 unsigned short read16(unsigned short address) {
@@ -2086,16 +2108,42 @@ void write8(unsigned short address, unsigned char value) {
   unsigned char page = address >> 8;
   if (page < 0xC0) {
     if (page >= 0x04 && page < 0x08 && ram[address] != value) {
-      screenWrite(address, value);
+      screenWrite(address, value, ram[address]);
     }
     ram[address] = value;
   } else {
-    // Keyboard Strobe
-    if (address == 0xC010)
-      keyboard_strobe();
-    // Speaker toggle
-    if (address == 0xC030)
-      speaker_toggle();
+    // https://apple2.org.za/gswv/a2zine/faqs/csa2pfaq.html
+    switch (address) {
+      // Keyboard Strobe
+      case 0xC010:
+        keyboard_strobe();
+        break;
+      // Speaker toggle
+      case 0xC030:
+        speaker_toggle();
+        break;
+      case 0xC050:
+        show_graphics();
+        break;
+      case 0xC051:
+        show_text();
+        break;
+      case 0xC052: // full gfx
+        full_graphics();
+        break;
+      case 0xC053: // split gfx/text
+        split_graphics();
+        break;
+      case 0xC054: // Page 1
+      case 0xC055: // Page 2;
+        break;
+      case 0xC056:
+        show_lores();
+        break;
+      case 0xC057:
+        show_hires();
+        break;
+    }
   }
 }
 

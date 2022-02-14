@@ -141,7 +141,7 @@ void init_machine() {
 extern "C" void loop() {
   debug_info(millis());
   // Routines for hooking apple ][ monitor routines
-  program_hooks(PC);
+  PC = program_hooks(PC);
 
   // Get opcode / addressing mode
   opcode = read8(PC++);

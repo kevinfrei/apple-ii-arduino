@@ -2876,7 +2876,7 @@ USER_JSON=\
 .PHONY: ${PROJ_NAME} flash clean allclean
 
 # Now the default target
-all: ${BUILD_PATH} ${PROJ_NAME}
+all: ${BUILD_PATH} ${PROJ_NAME} compile_commands
 
 # Some house keeping
 clean:

@@ -35,54 +35,157 @@ void set_backlight(bool turnOn) {
 const uint16_t beige = 0b1100011001110001;
 const uint16_t amber = 0b1111110110000000;
 const uint16_t green = 0b0011011111100110;
-
+const uint16_t loClrs[16] = {
+  0b0000000000000000, // black
+  0b1001100000001011, // "red"
+  0b0100000000111100, // 'dblue'
+  0b1100100100011111, // purple
+  0b0000010000000010, // dgreen
+  0b1000010000010000, // gray
+  0b0010110011011111, // mblue
+  0b1010110100111111, // lblue
+  0b0110001010000000, // brown
+  0b1111001011100000, // orange
+  0b1100011000011000, // lgray
+  0b1111110000111100, // pink
+  0b0001011001100001, // lgreen
+  0b1101011010100010, // yellow
+  0b0101011110110011, // aqua
+  0b1111111111111111, // white
+};
 uint16_t theColor = green; // ST77XX_WHITE
 const bool rotateColors = false;
 
-unsigned char blit[35 * 192];
+// Stuff to deal with:
+bool lowRes = false;
+bool hiRes = false;
+bool splitMode = false;
+bool textMode = true;
+bool page1 = true;
 
-void clearBuffer() {
-  memset(blit, 0xff, 35 * 192);
+// This stuff kinda wants a trigger to actually upate the screen after things
+// have "settled" so maybe wait 3-6 instructions before actually deciding to
+// switch around the mode.
+
+void show_text() {
+  textMode = true;
+  // TODO
 }
 
-void drawCharacter(unsigned char row, unsigned char col, unsigned char val) {
-  if (row > 23 || col > 39) {
-    return;
+void show_graphics() {
+  textMode = false;
+  // TODO
+}
+
+void show_lores() {
+  lowRes = true;
+  hiRes = false;
+  // TODO
+}
+
+void show_hires() {
+  lowRes = false;
+  hiRes = true;
+  // TODO
+}
+
+void full_graphics() {
+  splitMode = false;
+  // TODO
+}
+
+void split_graphics() {
+  splitMode = true;
+  // TODO
+}
+
+// This routine jacks up a typical full screen scroll by ~30% or so. It takes
+// the old and new bitmaps, then trims the bitmap to be the minimal size while
+// keeping the screen correct. I can get up to about 11FPS for a full screen
+// scroll with different characters
+inline void getDelta(uint8_t* upd,
+                     uint8_t* old,
+                     uint16_t* x,
+                     uint16_t* y,
+                     uint16_t* w,
+                     uint16_t* h,
+                     uint8_t* out) {
+  uint8_t tmp[8];
+  for (uint8_t yo = 0; yo < 8; yo++) {
+    tmp[yo] = upd[yo] ^ old[yo];
   }
-  uint8_t* charInfo = &fontInfo[val * 8];
-  uint16_t colOfs = col * 7;
-  uint8_t byteOfs = colOfs / 8;
-  uint8_t bitOfs = colOfs % 8;
-  uint8_t mask1 = (bitOfs > 0) ? 0xFF << (8 - bitOfs) : 1;
-  uint8_t mask2 = (bitOfs > 1) ? 0xFF >> (bitOfs - 1) : 0;
-  for (int i = 0; i < 8; i++) {
-    char init = blit[35 * (row * 8 + i) + byteOfs];
-    init = (init & mask1) | (charInfo[i] >> bitOfs);
-    blit[35 * (row * 8 + i) + byteOfs] = init;
-    if (mask2) {
-      init = blit[35 * (row * 8 + i) + 1 + byteOfs];
-      init = (init & mask2) | (charInfo[i] << (8 - bitOfs));
-      blit[35 * (row * 8 + i) + 1 + byteOfs] = init;
+  uint8_t ys, ye;
+  for (ys = 0; ys < 8; ys++) {
+    if (tmp[ys]) {
+      break;
     }
   }
+  for (ye = 8; ye > ys; ye--) {
+    if (tmp[ye - 1]) {
+      break;
+    }
+  }
+  uint8_t xs = 0, xe = 7;
+  // Scan for hi-bit differences
+  for (uint8_t mask = 0x80; mask != 0xFE; xs++, mask = (mask >> 1) | 0x80) {
+    bool diff = false;
+    for (uint8_t yo = ys; yo < ye; yo++) {
+      if (tmp[yo] & mask) {
+        // We found a difference
+        diff = true;
+        break;
+      }
+    }
+    if (diff) {
+      break;
+    }
+  }
+  xe = 7;
+  for (uint8_t mask = 0x2; mask != 0xFE; xe--, mask = (mask << 1) | 2) {
+    bool diff = false;
+    for (uint8_t yo = ys; yo < ye; yo++) {
+      if (tmp[yo] & mask) {
+        // We found a difference
+        diff = true;
+        break;
+      }
+    }
+    if (diff) {
+      break;
+    }
+  }
+  // Copy the changed bits into the new bitmap
+  for (uint8_t yo = ys; yo < ye; yo++) {
+    out[yo - ys] = upd[yo] << xs;
+  }
+  *x = 20 + xs;
+  *y = 24 + ys;
+  *w = xe - xs;
+  *h = ye - ys;
 }
 
-void blitBuffer() {
-  tft.drawBitmap(20, 24, blit, 280, 192, ST77XX_BLACK, theColor);
-}
-
-void writeCharacter(unsigned char row, unsigned char col, unsigned char val) {
-  if (row > 23 || col > 39)
+void writeCharacter(uint8_t row, uint8_t col, uint8_t val, uint8_t prev) {
+  // The memory has already been updated. Just update the visuals.
+  if ((row > 23) || (col > 39) || (splitMode ? (row < 20) : hiRes)) {
     return;
-  // The memory has already been updated
-  // Just update the visuals
-  tft.drawBitmap(20 + col * 7,
-                 24 + row * 8,
-                 &fontInfo[val * 8],
-                 7,
-                 8,
-                 ST77XX_BLACK,
-                 theColor);
+  }
+  if (textMode || (splitMode && row >= 20)) {
+    // Let's try to minimize the amount of bitmap updating
+    uint8_t tmp[8];
+    uint16_t w, h, x, y;
+    getDelta(&fontInfo[val * 8], &fontInfo[prev * 8], &x, &y, &w, &h, tmp);
+    if (h && w) {
+      tft.drawBitmap(
+        col * 7 + x, row * 8 + y, tmp, w, h, ST77XX_BLACK, theColor);
+    }
+  } else if (lowRes) {
+    if ((val & 0xF) != (prev & 0xF)) {
+      tft.fillRect(20 + col * 7, 24 + row * 8, 7, 4, loClrs[val & 0xF]);
+    }
+    if ((val >> 4) != (prev >> 4)) {
+      tft.fillRect(20 + col * 7, 28 + row * 8, 7, 4, loClrs[val >> 4]);
+    }
+  }
 }
 
 void init_screen() {
@@ -120,6 +223,9 @@ unsigned short row_to_addr(unsigned char row) {
 
 bufRect st = {0};
 
+// This isn't any faster than the built in routine, once I got the rendering
+// optimization stuff complete: lol
+// TODO: Make this work with the 0page 'window' edges at 0x20-23
 void screenScroll() {
   // move the memory while also updating the screen
   uint32_t start = micros();
@@ -128,9 +234,10 @@ void screenScroll() {
     unsigned int nxtRow = row_to_addr(row + 1);
     for (unsigned char col = 0; col < 40; col++) {
       unsigned char c = ram[nxtRow + col];
-      if (ram[topRow + col] != c) {
+      unsigned char prev = ram[topRow + col];
+      if (prev != c) {
         ram[topRow + col] = c;
-        writeCharacter(row, col, c);
+        writeCharacter(row, col, c, prev);
       }
     }
     topRow = nxtRow;
@@ -139,38 +246,16 @@ void screenScroll() {
     unsigned char c = ram[topRow + col];
     if (c != BLANK_CHAR) {
       ram[topRow + col] = BLANK_CHAR;
-      writeCharacter(23, col, BLANK_CHAR);
+      writeCharacter(23, col, BLANK_CHAR, c);
     }
   }
   uint32_t scrollTime = micros() - start;
   drawHex("%d", 140, 17, scrollTime, &st);
 }
 
-// This is reasonably well optimized. It could be further optimized by batching
-// the writeCharacter calls into bigger bitmap writes...
-void screenScrollBlit() {
-  // move the memory while also updating the screen
-  uint32_t start = micros();
-  clearBuffer();
-  unsigned int topRow = row_to_addr(0);
-  for (unsigned char row = 0; row < 23; row++) {
-    unsigned int nxtRow = row_to_addr(row + 1);
-    for (unsigned char col = 0; col < 40; col++) {
-      unsigned char c = ram[nxtRow + col];
-      if (ram[topRow + col] != c) {
-        ram[topRow + col] = c;
-      }
-      drawCharacter(row, col, c);
-    }
-    topRow = nxtRow;
-  }
-  memset(&ram[topRow], BLANK_CHAR, 40);
-  blitBuffer();
-  uint32_t scrollTime = micros() - start;
-  drawHex("%d", 140, 17, scrollTime, &st);
-}
-
-void screenWrite(unsigned short address, unsigned char value) {
+void screenWrite(unsigned short address,
+                 unsigned char value,
+                 unsigned char prev) {
   // Find our row/column
   unsigned char row, col;
   unsigned char block_of_lines = (address >> 7) - 0x08;
@@ -188,7 +273,7 @@ void screenWrite(unsigned short address, unsigned char value) {
   }
   // If not bell character
   if (value != 0x87)
-    writeCharacter(row, col, value);
+    writeCharacter(row, col, value, prev);
 }
 char buffer[40];
 

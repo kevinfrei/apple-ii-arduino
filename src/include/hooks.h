@@ -1,1 +1,1 @@
-void program_hooks(unsigned short addr);
+unsigned short program_hooks(unsigned short addr);
