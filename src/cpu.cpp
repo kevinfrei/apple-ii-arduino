@@ -2,9 +2,9 @@
 // dpeckett.com, <damian@pecke.tt>
 #include <Arduino.h>
 
-#include "screen.h"
 #include "hooks.h"
 #include "memory.h"
+#include "screen.h"
 
 // Address Modes
 #define AD_IMP 0x01
@@ -48,22 +48,22 @@
 // clang-format off
 // high nibble SR flags, low nibble address mode
 const unsigned char flags[] = {
-	AD_IMP, AD_INDX, UNDF, UNDF, UNDF, FL_ZN|AD_ZPG, FL_ZNC|AD_ZPG, UNDF, AD_IMP, FL_ZN|AD_IMM, FL_ZNC|AD_A, UNDF, UNDF, FL_ZN|AD_ABS, FL_ZNC|AD_ABS, UNDF,
-	AD_REL, FL_ZN|AD_INDY, UNDF, UNDF, UNDF, FL_ZN|AD_ZPGX, FL_ZNC|AD_ZPGX, UNDF, AD_IMP, FL_ZN|AD_ABSY, UNDF, UNDF, UNDF, FL_ZN|AD_ABSX, FL_ZNC|AD_ABSX, UNDF,
-	AD_ABS, FL_ZN|AD_INDX, UNDF, UNDF, FL_Z|AD_ZPG, FL_ZN|AD_ZPG, FL_ZNC|AD_ZPG, UNDF, AD_IMP, FL_ZN|AD_IMM, FL_ZNC|AD_A, UNDF, FL_Z|AD_ABS, FL_ZN|AD_ABS, FL_ZNC|AD_ABS, UNDF,
-	AD_REL, FL_ZN|AD_INDY, UNDF, UNDF, UNDF, FL_ZN|AD_ZPGX, FL_ZNC|AD_ZPGX, UNDF, AD_IMP, FL_ZN|AD_ABSY, UNDF, UNDF, UNDF, FL_ZN|AD_ABSX, FL_ZNC|AD_ABSX, UNDF,
-	AD_IMP, FL_ZN|AD_INDX, UNDF, UNDF, UNDF, FL_ZN|AD_ZPG, FL_ZNC|AD_ZPG, UNDF, AD_IMP, FL_ZN|AD_IMM, FL_ZNC|AD_A, UNDF, AD_ABS, FL_ZN|AD_ABS, FL_ZNC|AD_ABS, UNDF,
-	AD_REL, FL_ZN|AD_INDY, UNDF, UNDF, UNDF, FL_ZN|AD_ZPGX, FL_ZNC|AD_ZPGX, UNDF, AD_IMP, FL_ZN|AD_ABSY, UNDF, UNDF, UNDF, FL_ZN|AD_ABSX, FL_ZNC|AD_ABSX, UNDF,
-	AD_IMP, FL_ALL|AD_INDX, UNDF, UNDF, UNDF, FL_ALL|AD_ZPG, FL_ZNC|AD_ZPG, UNDF, FL_ZN|AD_IMP, FL_ALL|AD_IMM, FL_ZNC|AD_A,UNDF, AD_IND, FL_ALL|AD_ABS, FL_ZNC|AD_ABS, UNDF,
-	AD_REL, FL_ALL|AD_INDY, UNDF, UNDF, UNDF, FL_ALL|AD_ZPGX, FL_ZNC|AD_ZPGX, UNDF, AD_IMP, FL_ALL|AD_ABSY, UNDF, UNDF, UNDF, FL_ALL|AD_ABSX, FL_ZNC|AD_ABSX, UNDF,
-	UNDF, AD_INDX, UNDF, UNDF, AD_ZPG, AD_ZPG, AD_ZPG, UNDF, FL_ZN|AD_IMP, UNDF, FL_ZN|AD_IMP, UNDF, AD_ABS, AD_ABS, AD_ABS, UNDF,
-	AD_REL, AD_INDY, UNDF, UNDF, AD_ZPGX, AD_ZPGX, AD_ZPGY, UNDF, FL_ZN|AD_IMP, AD_ABSY, AD_IMP, UNDF, UNDF, AD_ABSX, UNDF, UNDF,
-	FL_ZN|AD_IMM, FL_ZN|AD_INDX, FL_ZN|AD_IMM, UNDF, FL_ZN|AD_ZPG, FL_ZN|AD_ZPG, FL_ZN|AD_ZPG, UNDF, FL_ZN|AD_IMP, FL_ZN|AD_IMM, FL_ZN|AD_IMP, UNDF, FL_ZN|AD_ABS, FL_ZN|AD_ABS, FL_ZN|AD_ABS, UNDF,
-	AD_REL, FL_ZN|AD_INDY, UNDF, UNDF, FL_ZN|AD_ZPGX, FL_ZN|AD_ZPGX, FL_ZN|AD_ZPGY, UNDF, AD_IMP, FL_ZN|AD_ABSY, FL_ZN|AD_IMP, UNDF, FL_ZN|AD_ABSX, FL_ZN|AD_ABSX, FL_ZN|AD_ABSY, UNDF,
-	FL_ZNC|AD_IMM, FL_ZNC|AD_INDX, UNDF, UNDF, FL_ZNC|AD_ZPG, FL_ZNC|AD_ZPG, FL_ZN|AD_ZPG, UNDF, FL_ZN|AD_IMP, FL_ZNC|AD_IMM, FL_ZN|AD_IMP, UNDF, FL_ZNC|AD_ABS, FL_ZNC|AD_ABS,	FL_ZN|AD_ABS, UNDF,
-	AD_REL, FL_ZNC|AD_INDY, UNDF, UNDF, UNDF, FL_ZNC|AD_ZPGX, FL_ZN|AD_ZPGX, UNDF, AD_IMP, FL_ZNC|AD_ABSY, UNDF, UNDF, UNDF, FL_ZNC|AD_ABSX, FL_ZN|AD_ABSX, UNDF,
-	FL_ZNC|AD_IMM, FL_ALL|AD_INDX, UNDF, UNDF, FL_ZNC|AD_ZPG, FL_ALL|AD_ZPG, FL_ZN|AD_ZPG, UNDF, FL_ZN|AD_IMP, FL_ALL|AD_IMM, AD_IMP, UNDF, FL_ZNC|AD_ABS, FL_ALL|AD_ABS,	FL_ZN|AD_ABS, UNDF,
-	AD_REL, FL_ALL|AD_INDY, UNDF, UNDF, UNDF, FL_ALL|AD_ZPGX, FL_ZN|AD_ZPGX, UNDF, AD_IMP, FL_ALL|AD_ABSY, UNDF, UNDF, UNDF, FL_ALL|AD_ABSX, FL_ZN|AD_ABSX, UNDF
+	AD_IMP,        AD_INDX,        UNDF,         UNDF, UNDF,          FL_ZN|AD_ZPG,   FL_ZNC|AD_ZPG,  UNDF, AD_IMP,       FL_ZN|AD_IMM,   FL_ZNC|AD_A, UNDF, UNDF, FL_ZN|AD_ABS, FL_ZNC|AD_ABS, UNDF,
+	AD_REL,        FL_ZN|AD_INDY,  UNDF,         UNDF, UNDF,          FL_ZN|AD_ZPGX,  FL_ZNC|AD_ZPGX, UNDF, AD_IMP,       FL_ZN|AD_ABSY,  UNDF, UNDF, UNDF, FL_ZN|AD_ABSX, FL_ZNC|AD_ABSX, UNDF,
+	AD_ABS,        FL_ZN|AD_INDX,  UNDF,         UNDF, FL_Z|AD_ZPG,   FL_ZN|AD_ZPG,   FL_ZNC|AD_ZPG,  UNDF, AD_IMP,       FL_ZN|AD_IMM,   FL_ZNC|AD_A, UNDF, FL_Z|AD_ABS, FL_ZN|AD_ABS, FL_ZNC|AD_ABS, UNDF,
+	AD_REL,        FL_ZN|AD_INDY,  UNDF,         UNDF, UNDF,          FL_ZN|AD_ZPGX,  FL_ZNC|AD_ZPGX, UNDF, AD_IMP,       FL_ZN|AD_ABSY,  UNDF, UNDF, UNDF, FL_ZN|AD_ABSX, FL_ZNC|AD_ABSX, UNDF,
+	AD_IMP,        FL_ZN|AD_INDX,  UNDF,         UNDF, UNDF,          FL_ZN|AD_ZPG,   FL_ZNC|AD_ZPG,  UNDF, AD_IMP,       FL_ZN|AD_IMM,   FL_ZNC|AD_A, UNDF, AD_ABS, FL_ZN|AD_ABS, FL_ZNC|AD_ABS, UNDF,
+	AD_REL,        FL_ZN|AD_INDY,  UNDF,         UNDF, UNDF,          FL_ZN|AD_ZPGX,  FL_ZNC|AD_ZPGX, UNDF, AD_IMP,       FL_ZN|AD_ABSY,  UNDF, UNDF, UNDF, FL_ZN|AD_ABSX, FL_ZNC|AD_ABSX, UNDF,
+	AD_IMP,        FL_ALL|AD_INDX, UNDF,         UNDF, UNDF,          FL_ALL|AD_ZPG,  FL_ZNC|AD_ZPG,  UNDF, FL_ZN|AD_IMP, FL_ALL|AD_IMM,  FL_ZNC|AD_A,UNDF, AD_IND, FL_ALL|AD_ABS, FL_ZNC|AD_ABS, UNDF,
+	AD_REL,        FL_ALL|AD_INDY, UNDF,         UNDF, UNDF,          FL_ALL|AD_ZPGX, FL_ZNC|AD_ZPGX, UNDF, AD_IMP,       FL_ALL|AD_ABSY, UNDF, UNDF, UNDF, FL_ALL|AD_ABSX, FL_ZNC|AD_ABSX, UNDF,
+	UNDF,          AD_INDX,        UNDF,         UNDF, AD_ZPG,        AD_ZPG,         AD_ZPG,         UNDF, FL_ZN|AD_IMP, UNDF,           FL_ZN|AD_IMP, UNDF, AD_ABS, AD_ABS, AD_ABS, UNDF,
+	AD_REL,        AD_INDY,        UNDF,         UNDF, AD_ZPGX,       AD_ZPGX,        AD_ZPGY,        UNDF, FL_ZN|AD_IMP, AD_ABSY,        AD_IMP, UNDF, UNDF, AD_ABSX, UNDF, UNDF,
+	FL_ZN|AD_IMM,  FL_ZN|AD_INDX,  FL_ZN|AD_IMM, UNDF, FL_ZN|AD_ZPG,  FL_ZN|AD_ZPG,   FL_ZN|AD_ZPG,   UNDF, FL_ZN|AD_IMP, FL_ZN|AD_IMM,   FL_ZN|AD_IMP, UNDF, FL_ZN|AD_ABS, FL_ZN|AD_ABS, FL_ZN|AD_ABS, UNDF,
+	AD_REL,        FL_ZN|AD_INDY,  UNDF,         UNDF, FL_ZN|AD_ZPGX, FL_ZN|AD_ZPGX,  FL_ZN|AD_ZPGY,  UNDF, AD_IMP,       FL_ZN|AD_ABSY,  FL_ZN|AD_IMP, UNDF, FL_ZN|AD_ABSX, FL_ZN|AD_ABSX, FL_ZN|AD_ABSY, UNDF,
+	FL_ZNC|AD_IMM, FL_ZNC|AD_INDX, UNDF,         UNDF, FL_ZNC|AD_ZPG, FL_ZNC|AD_ZPG,  FL_ZN|AD_ZPG,   UNDF, FL_ZN|AD_IMP, FL_ZNC|AD_IMM,  FL_ZN|AD_IMP, UNDF, FL_ZNC|AD_ABS, FL_ZNC|AD_ABS,	FL_ZN|AD_ABS, UNDF,
+	AD_REL,        FL_ZNC|AD_INDY, UNDF,         UNDF, UNDF,          FL_ZNC|AD_ZPGX, FL_ZN|AD_ZPGX,  UNDF, AD_IMP,       FL_ZNC|AD_ABSY, UNDF, UNDF, UNDF, FL_ZNC|AD_ABSX, FL_ZN|AD_ABSX, UNDF,
+	FL_ZNC|AD_IMM, FL_ALL|AD_INDX, UNDF,         UNDF, FL_ZNC|AD_ZPG, FL_ALL|AD_ZPG,  FL_ZN|AD_ZPG,   UNDF, FL_ZN|AD_IMP, FL_ALL|AD_IMM,  AD_IMP, UNDF, FL_ZNC|AD_ABS, FL_ALL|AD_ABS,	FL_ZN|AD_ABS, UNDF,
+	AD_REL,        FL_ALL|AD_INDY, UNDF,         UNDF, UNDF,          FL_ALL|AD_ZPGX, FL_ZN|AD_ZPGX,  UNDF, AD_IMP,       FL_ALL|AD_ABSY, UNDF, UNDF, UNDF, FL_ALL|AD_ABSX, FL_ZN|AD_ABSX, UNDF
 };
 // clang-format on
 
@@ -79,7 +79,7 @@ unsigned short argument_addr;
 unsigned char value8;
 unsigned short value16, value16_2, result;
 
-void setflags() {
+inline void setflags() {
   // Mask out affected flags
   switch (opflags & 0xF0) {
     case 0xA0:
@@ -111,25 +111,23 @@ void setflags() {
 }
 
 // Stack functions
-void push16(unsigned short pushval) {
+inline void push16(unsigned short pushval) {
   write8(STP_BASE + (STP--), (pushval >> 8) & 0xFF);
   write8(STP_BASE + (STP--), pushval & 0xFF);
 }
 
-void push8(unsigned char pushval) {
+inline void push8(unsigned char pushval) {
   write8(STP_BASE + (STP--), pushval);
 }
 
-unsigned short pull16() {
-  unsigned char st1 = ++STP;
-  unsigned char st2 = ++STP;
-  value16 = ((unsigned short)read8(STP_BASE + st1)) |
-            ((unsigned short)read8(STP_BASE + st2) << 8);
-  return value16;
+inline unsigned char pull8() {
+  return read8(STP_BASE + (++STP));
 }
 
-unsigned char pull8() {
-  return read8(STP_BASE + (++STP));
+inline unsigned short pull16() {
+  uint16_t vlo = pull8();
+  uint16_t vhi = pull8();
+  return vlo | (vhi << 8);
 }
 
 void init_machine() {

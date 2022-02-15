@@ -3,6 +3,7 @@
 
 #include "Fonts/FreeSans12pt7b.h"
 #include "cpu.h"
+#include "fontdiff.h"
 #include "memory.h"
 #include "screen.h"
 
@@ -99,83 +100,14 @@ void split_graphics() {
   // TODO
 }
 
-// This routine jacks up a typical full screen scroll by ~30% or so. It takes
-// the old and new bitmaps, then trims the bitmap to be the minimal size while
-// keeping the screen correct. I can get up to about 11FPS for a full screen
-// scroll with different characters
-inline bool trimChar(uint8_t* upd, uint8_t* old, uint8_t* out) {
-  // For speed, just check for the outer edges, and the bottom row
-  if ((upd[0] & 0x83) == (old[0] & 0x83) &&
-      (upd[1] & 0x83) == (old[1] & 0x83) &&
-      (upd[2] & 0x83) == (old[2] & 0x83) &&
-      (upd[3] & 0x83) == (old[3] & 0x83) &&
-      (upd[4] & 0x83) == (old[4] & 0x83) &&
-      (upd[5] & 0x83) == (old[5] & 0x83) &&
-      (upd[6] & 0x83) == (old[6] & 0x83) && (upd[7] == old[7])) {
-    out[0] = upd[0] << 1;
-    out[1] = upd[1] << 1;
-    out[2] = upd[2] << 1;
-    out[3] = upd[3] << 1;
-    out[4] = upd[4] << 1;
-    out[5] = upd[5] << 1;
-    out[6] = upd[6] << 1;
-    return true;
-  }
-  return false;
-  /* Adaptive trimming code, fully tested, below:
-  uint8_t tmp[8];
-  for (uint8_t yo = 0; yo < 8; yo++) {
-    tmp[yo] = upd[yo] ^ old[yo];
-  }
-  uint8_t ys, ye;
-  for (ys = 0; ys < 8; ys++) {
-    if (tmp[ys]) {
-      break;
-    }
-  }
-  for (ye = 8; ye > ys; ye--) {
-    if (tmp[ye - 1]) {
-      break;
-    }
-  }
-  uint8_t xs = 0, xe = 7;
-  // Scan for hi-bit differences
-  for (uint8_t mask = 0x80; mask != 0xFE; xs++, mask = (mask >> 1) | 0x80) {
-    bool diff = false;
-    for (uint8_t yo = ys; yo < ye; yo++) {
-      if (tmp[yo] & mask) {
-        // We found a difference
-        diff = true;
-        break;
-      }
-    }
-    if (diff) {
-      break;
-    }
-  }
-  xe = 7;
-  for (uint8_t mask = 0x2; mask != 0xFE; xe--, mask = (mask << 1) | 2) {
-    bool diff = false;
-    for (uint8_t yo = ys; yo < ye; yo++) {
-      if (tmp[yo] & mask) {
-        // We found a difference
-        diff = true;
-        break;
-      }
-    }
-    if (diff) {
-      break;
-    }
-  }
-  // Copy the changed bits into the new bitmap
-  for (uint8_t yo = ys; yo < ye; yo++) {
-    out[yo - ys] = upd[yo] << xs;
-  }
-  *x = 20 + xs;
-  *y = 24 + ys;
-  *w = xe - xs;
-  *h = ye - ys;
- */
+void show_page1() {
+  page1 = true;
+  // TODO
+}
+
+void show_page2() {
+  page1 = false;
+  // TODO
 }
 
 void writeCharacter(uint8_t row, uint8_t col, uint8_t val, uint8_t prev) {
@@ -185,20 +117,12 @@ void writeCharacter(uint8_t row, uint8_t col, uint8_t val, uint8_t prev) {
   }
   if (textMode || (splitMode && row >= 20)) {
     // Let's try to minimize the amount of bitmap updating
-    uint8_t out[7];
-    bool trimmed = trimChar(&fontInfo[val * 8], &fontInfo[prev * 8], &out[0]);
-    if (trimmed) {
-      tft.drawBitmap(
-        col * 7 + 21, row * 8 + 24, out, 5, 7, ST77XX_BLACK, theColor);
-    } else {
-      tft.drawBitmap(col * 7 + 20,
-                     row * 8 + 24,
-                     &fontInfo[val * 8],
-                     7,
-                     8,
-                     ST77XX_BLACK,
-                     theColor);
-    }
+    if (val == prev) return;
+    uint8_t out[8];
+    uint16_t x, y, w, h;
+    // TODO: Maybe memoize this function?
+    trimChar(&fontInfo[val * 8], &fontInfo[prev * 8], &out[0], &x, &y, &w, &h);
+    tft.drawBitmap(col * 7 + x, row * 8 + y, out, w, h, ST77XX_BLACK, theColor);
   } else if (lowRes) {
     if ((val & 0xF) != (prev & 0xF)) {
       tft.fillRect(20 + col * 7, 24 + row * 8, 7, 4, loClrs[val & 0xF]);
@@ -242,14 +166,11 @@ unsigned short row_to_addr(unsigned char row) {
   return 0x400 | (cd << 8) | (e << 7) | (ab << 5) | (ab << 3);
 }
 
-bufRect st = {0};
-
 // This isn't any faster than the built in routine, once I got the rendering
 // optimization stuff complete: lol
 // TODO: Make this work with the 0page 'window' edges at 0x20-23
 void screenScroll() {
   // move the memory while also updating the screen
-  uint32_t start = micros();
   unsigned int topRow = row_to_addr(0);
   for (unsigned char row = 0; row < 23; row++) {
     unsigned int nxtRow = row_to_addr(row + 1);
@@ -270,8 +191,6 @@ void screenScroll() {
       writeCharacter(23, col, BLANK_CHAR, c);
     }
   }
-  uint32_t scrollTime = micros() - start;
-  drawHex("%d", 140, 17, scrollTime, &st);
 }
 
 void screenWrite(unsigned short address,
@@ -292,9 +211,9 @@ void screenWrite(unsigned short address,
     row = block_of_lines + 16;
     col = block_offset - 0x50;
   }
-  // If not bell character
-  if (value != 0x87)
-    writeCharacter(row, col, value, prev);
+  // If not bell character << This is bad for graphics mode :)
+  // if (value != 0x87)
+  writeCharacter(row, col, value, prev);
 }
 char buffer[40];
 

@@ -29,10 +29,19 @@ PROJ_NAME=apple2
 BUILD_PATH=out
 
 # My custom flags
-COMPILER_CPP_EXTRA_FLAGS=
+COMPILER_CPP_EXTRA_FLAGS=-flto
 
 USER_INCLUDES=-Iinclude
-USER_CPP_SRCS=APPLEII.cpp cassette.cpp cpu.cpp font.cpp hooks.cpp kbdemu.cpp memory.cpp screen.cpp speaker.cpp
+USER_CPP_SRCS=\
+	APPLEII.cpp \
+	cassette.cpp \
+	cpu.cpp \
+	font.cpp \
+	hooks.cpp \
+	kbdemu.cpp \
+	memory.cpp \
+	screen.cpp \
+	speaker.cpp
 
 # Libraries to use:
 LIB_BUSIO=1

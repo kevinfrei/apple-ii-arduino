@@ -5,21 +5,30 @@
 #include "memory.h"
 #include "screen.h"
 
-// Hook some3 routines for the apple II monitor program
+bufRect st = {0};
+uint32_t lastTime = 0;
+
+// Hook some routines for the apple II monitor program
 // to trick the apple code into working on the simulator
 // I could patch the ROM, but this is literally ~15 cycles on failure
 unsigned short program_hooks(unsigned short addr) {
   // hook screen scroll, monitor command
   switch (addr) {
-    // The scroll routine isn't faster than just running the 6502 interpreter -
-    // lol
-    /*
+    // The scroll hook is only *slightly* faster than running the 6502
+    // interpreter, but it doesn't handle the scroll frame values in ZP properly
+    // - lol
     case 0xFC70: {
-        screenScroll();
-        // This is the wrong return address depending on the ROM :/
-        return 0xFC95;
+      // uint32_t scrollTime = micros() - lastTime;
+      // if (scrollTime < 999999) {
+        // drawHex("%d", 140, 17, scrollTime, &st);
+      // }
+      // lastTime = micros();
+      break;
+      screenScroll();
+      // This is the wrong return address depending on the ROM.
+      // Just pull the retaddr from the stack? That seems safer...
+      return 0xFC95;
     }
-    */
     // hook cassette write commnand
     case 0xFECD:
     case 0xFECF: {

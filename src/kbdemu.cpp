@@ -153,14 +153,12 @@ volatile unsigned char keymem = 0;
 bool flash = false;
 unsigned char key_index = 0;
 const char to_type[] =
-  "CALL -151\r"
-  "FC70G\r"
-  "0G\r"
   "0 HOME\r"
   "5 LET A = INT(RND(1) * 64) + 32\r"
   "10 PRINT CHR$(A);\r"
   "20 GOTO 5\r"
-  "RUN\r";
+  "RUN\r"
+  ;
 const unsigned int num_chars = sizeof(to_type) / sizeof(char);
 
 unsigned int kb_count = 0;
