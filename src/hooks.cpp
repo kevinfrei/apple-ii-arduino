@@ -15,12 +15,12 @@ unsigned short program_hooks(unsigned short addr) {
   // hook screen scroll, monitor command
   switch (addr) {
     // The scroll hook is only *slightly* faster than running the 6502
-    // interpreter, but it doesn't handle the scroll frame values in ZP properly
-    // - lol
+    // interpreter, but it doesn't yet handle the scroll frame values in ZP
+    // properly
     case 0xFC70: {
       // uint32_t scrollTime = micros() - lastTime;
       // if (scrollTime < 999999) {
-        // drawHex("%d", 140, 17, scrollTime, &st);
+      // drawHex("%d", 140, 17, scrollTime, &st);
       // }
       // lastTime = micros();
       break;
