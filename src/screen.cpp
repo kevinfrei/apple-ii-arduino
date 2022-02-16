@@ -117,7 +117,8 @@ void writeCharacter(uint8_t row, uint8_t col, uint8_t val, uint8_t prev) {
   }
   if (textMode || (splitMode && row >= 20)) {
     // Let's try to minimize the amount of bitmap updating
-    if (val == prev) return;
+    if (val == prev)
+      return;
     uint8_t out[8];
     uint16_t x, y, w, h;
     // TODO: Maybe memoize this function?
@@ -157,7 +158,7 @@ void clear_screen() {
   tft.fillRect(12, 16, 296, 208, ST77XX_BLACK);
 }
 
-unsigned short row_to_addr(unsigned char row) {
+unsigned short text_row_to_addr(unsigned char row) {
   // bits: 000a bcde =>  0x400 | [00cd eaba b000]
   // Due to range, if !(a && b) is true
   unsigned short ab = (row >> 3) & 3;
@@ -171,9 +172,9 @@ unsigned short row_to_addr(unsigned char row) {
 // TODO: Make this work with the 0page 'window' edges at 0x20-23
 void screenScroll() {
   // move the memory while also updating the screen
-  unsigned int topRow = row_to_addr(0);
+  unsigned int topRow = text_row_to_addr(0);
   for (unsigned char row = 0; row < 23; row++) {
-    unsigned int nxtRow = row_to_addr(row + 1);
+    unsigned int nxtRow = text_row_to_addr(row + 1);
     for (unsigned char col = 0; col < 40; col++) {
       unsigned char c = ram[nxtRow + col];
       unsigned char prev = ram[topRow + col];
@@ -193,9 +194,40 @@ void screenScroll() {
   }
 }
 
+void highWrite(unsigned short address, unsigned char val, unsigned char prv) {
+  /*
+  0:2000
+  1:2400
+  2:2800
+  3:2c00
+  4:3000
+  5:3400
+  6:3800
+  7:3c00
+  8:2080
+  ....
+  15:3c80
+  ....
+  56:2380
+  ....
+  63:3f80
+  64:2028
+  ...
+  128:2050
+  ...
+  191:3fd0
+  */
+  // LSB: Bits 11-13, then bit 7-9, then the bottom 40/80/120 (with 8 left over)
+  uint8_t row =
+    ((addr >> 11) & 7) | ((addr >> 4) & 0x38) + (((addr & 127) / 40) << 6);
+}
+
 void screenWrite(unsigned short address,
                  unsigned char value,
                  unsigned char prev) {
+  if (value == prev) {
+    return;
+  }
   // Find our row/column
   unsigned char row, col;
   unsigned char block_of_lines = (address >> 7) - 0x08;
