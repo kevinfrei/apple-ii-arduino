@@ -29,7 +29,7 @@ PROJ_NAME=apple2
 BUILD_PATH=out
 
 # My custom flags
-COMPILER_CPP_EXTRA_FLAGS=-flto
+# COMPILER_CPP_EXTRA_FLAGS=-flto
 
 USER_INCLUDES=-Iinclude
 USER_CPP_SRCS=\

@@ -154,9 +154,18 @@ bool flash = false;
 unsigned char key_index = 0;
 const char to_type[] =
   "0 HOME\r"
-  "5 LET A = INT(RND(1) * 64) + 32\r"
-  "10 PRINT CHR$(A);\r"
-  "20 GOTO 5\r"
+//  "5 PRINT \"@@@@@@\"\r"
+  "10 FOR J=1 TO 19\r"
+  "15 PRINT \"\"\r"
+  "18 NEXT J\r"
+  "19 HGR\r"
+  "25 FOR I = 0 TO 139 STEP 2\r"
+  "26 HCOLOR=I - (INT(I / 7) * 7)\r"
+  "30 HPLOT 0,I TO 276,138 - I\r"
+  "33 HPLOT I * 2,0 TO 276 - (I * 2), 138\r"
+  "35 NEXT I\r"
+  "40 TEXT\r"
+  "50 END\r"
   "RUN\r"
   ;
 const unsigned int num_chars = sizeof(to_type) / sizeof(char);
@@ -167,7 +176,7 @@ unsigned int last_kb = 0;
 unsigned char keyboard_read() {
   unsigned int ms = millis();
   kb_count++;
-  if (ms - last_kb > 50) {
+  if (ms - last_kb > 40) {
     // Type a character
     last_kb = ms;
     if (key_index < num_chars) {

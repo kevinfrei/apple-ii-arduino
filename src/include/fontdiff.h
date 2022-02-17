@@ -1,6 +1,8 @@
 #pragma once
 #include <stdint.h>
 
+#include "screen.h"
+
 // This routine jacks up a typical full screen scroll by ~30% or so. It takes
 // the old and new bitmaps, then trims the bitmap to be the minimal size while
 // keeping the screen correct. I can get up to about 11FPS for a full screen
@@ -60,8 +62,8 @@ inline void trimChar(uint8_t* upd,
   for (uint8_t yo = ys; yo < ye; yo++) {
     out[yo - ys] = upd[yo] << xs;
   }
-  *x = 20 + xs;
-  *y = 24 + ys;
+  *x = X_OFFSET + xs;
+  *y = Y_OFFSET + ys;
   *w = xe - xs;
   *h = ye - ys;
 }

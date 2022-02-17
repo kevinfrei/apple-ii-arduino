@@ -126,10 +126,12 @@ void writeCharacter(uint8_t row, uint8_t col, uint8_t val, uint8_t prev) {
     tft.drawBitmap(col * 7 + x, row * 8 + y, out, w, h, ST77XX_BLACK, theColor);
   } else if (lowRes) {
     if ((val & 0xF) != (prev & 0xF)) {
-      tft.fillRect(20 + col * 7, 24 + row * 8, 7, 4, loClrs[val & 0xF]);
+      tft.fillRect(
+        X_OFFSET + col * 7, Y_OFFSET + row * 8, 7, 4, loClrs[val & 0xF]);
     }
     if ((val >> 4) != (prev >> 4)) {
-      tft.fillRect(20 + col * 7, 28 + row * 8, 7, 4, loClrs[val >> 4]);
+      tft.fillRect(
+        X_OFFSET + col * 7, Y_OFFSET + 4 + row * 8, 7, 4, loClrs[val >> 4]);
     }
   }
 }
@@ -194,32 +196,44 @@ void screenScroll() {
   }
 }
 
+inline uint8_t hiResAddrToRow(uint16_t addr) {
+  uint16_t first = (addr >> 10) & 7;
+  uint16_t second = (addr >> 4) & 0x38;
+  uint16_t third = ((addr & 0x7F) / 40) << 6;
+  return first | second | third;
+}
+
+inline uint16_t hiResRowToAddr(uint8_t row, bool page2 = false) {
+  uint16_t third = ((row & 0xC0) >> 3) | ((row & 0xC0) >> 1);
+  uint16_t second = (row & 0x38) << 4;
+  uint16_t first = (row & 7) << 10;
+  return first | second | third | (page2 ? 0x4000 : 0x2000);
+}
+
+bufRect oldHGR = {0};
+
 void highWrite(unsigned short address, unsigned char val, unsigned char prv) {
-  /*
-  0:2000
-  1:2400
-  2:2800
-  3:2c00
-  4:3000
-  5:3400
-  6:3800
-  7:3c00
-  8:2080
-  ....
-  15:3c80
-  ....
-  56:2380
-  ....
-  63:3f80
-  64:2028
-  ...
-  128:2050
-  ...
-  191:3fd0
-  */
-  // LSB: Bits 11-13, then bit 7-9, then the bottom 40/80/120 (with 8 left over)
-  uint8_t row =
-    ((addr >> 11) & 7) | ((addr >> 4) & 0x38) + (((addr & 127) / 40) << 6);
+  if (textMode || !hiRes || !(address & 0x2000) == page1) {
+    return;
+  }
+  uint8_t row = hiResAddrToRow(address);
+  if (row > 159 && splitMode) {
+    return;
+  }
+  uint8_t col = (address & 0x7f) - 5 * ((row & 0xC0) >> 3);
+  // Bit reverse the whole thing...
+  uint8_t flip = ((val & 0x01) << 7) | ((val & 0x02) << 5) |
+                 ((val & 0x04) << 3) | ((val & 0x08) << 1) |
+                 ((val & 0x10) >> 1) | ((val & 0x20) >> 3) |
+                 ((val & 0x40) >> 5);
+  // TODO: Draw the bit on screen, but maybe 'delayed' by a couple cycles to batch
+  // updates better? Not sure, but it feels like maybe batching ought to be handled
+  // by the 6502 code for hires graphics (multiple memory writes are slow, so folks
+  // probably optimized for this?)
+  // TODO: Maybe be color aware?
+  // Monochome is MUCH easier (WOZ!!! Shakes fist, while also being impressed)
+  tft.drawBitmap(
+    X_OFFSET + col * 7, Y_OFFSET + row, &flip, 7, 1, theColor, ST77XX_BLACK);
 }
 
 void screenWrite(unsigned short address,
