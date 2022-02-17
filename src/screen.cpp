@@ -38,18 +38,18 @@ const uint16_t amber = 0b1111110110000000;
 const uint16_t green = 0b0011011111100110;
 const uint16_t loClrs[16] = {
   0b0000000000000000, // black
-  0b1001100000001011, // "red"
-  0b0100000000111100, // 'dblue'
+  0b1001100000001011, // magenta
+  0b0100000000111100, // dark blue
   0b1100100100011111, // purple
-  0b0000010000000010, // dgreen
+  0b0000010000000010, // dark green
   0b1000010000010000, // gray
-  0b0010110011011111, // mblue
-  0b1010110100111111, // lblue
+  0b0010110011011111, // medium blue
+  0b1010110100111111, // light blue
   0b0110001010000000, // brown
   0b1111001011100000, // orange
-  0b1100011000011000, // lgray
+  0b1100011000011000, // light gray
   0b1111110000111100, // pink
-  0b0001011001100001, // lgreen
+  0b0001011001100001, // light green
   0b1101011010100010, // yellow
   0b0101011110110011, // aqua
   0b1111111111111111, // white
@@ -69,25 +69,67 @@ bool page1 = true;
 // switch around the mode.
 
 void show_text() {
+  if (textMode) {
+    return;
+  }
   textMode = true;
-  // TODO
+  // TODO: Maybe wait an instruction or two, just to be safe?
+  tft.fillRect(X_OFFSET, Y_OFFSET, 280, 192, ST77XX_BLACK);
+  for (uint8_t row = 0; row < 24; row++) {
+    for (uint8_t col = 0; col < 40; col++) {
+      writeCharacter(row, col, ram[text_row_to_addr(row) + col], 0x20);
+    }
+  }
 }
 
 void show_graphics() {
+  if (!textMode) {
+    return;
+  }
   textMode = false;
-  // TODO
+  // TODO: deal with part of the screen
+  if (lowRes) {
+    tft.fillRect(X_OFFSET, Y_OFFSET, 280, 192, ST77XX_BLACK);
+    for (uint8_t row = 0; row < 24; row++) {
+      for (uint8_t col = 0; col < 40; col++) {
+        writeCharacter(row, col, ram[text_row_to_addr(row) + col], 0x20);
+      }
+    }
+  } else if (hiRes) {
+    // TODO: optimize this, and make it splitmode aware
+    for (uint16_t ofs = 0; ofs < 0x2000; ofs += 128) {
+      for (uint16_t mem = 0; mem < 120; mem++) {
+        uint16_t addr = offs + mem + (page1 ? 0x2000 : 0x4000);
+        // The inverse makes sure everything gets cleared, right?
+        highWrite(addr, ram[addr], ~ram[addr]);
+      }
+    }
+  }
 }
 
 void show_lores() {
   lowRes = true;
   hiRes = false;
-  // TODO
+  // TODO: Maybe wait an instruction or two, just to be safe?
+  tft.fillRect(X_OFFSET, Y_OFFSET, 280, (splitMode ? 160 : 192), ST77XX_BLACK);
+  for (uint8_t row = 0; row < (splitMode ? 20 : 24); row++) {
+    for (uint8_t col = 0; col < 40; col++) {
+      writeCharacter(row, col, ram[text_row_to_addr(row) + col], 0x00);
+    }
+  }
 }
 
 void show_hires() {
   lowRes = false;
   hiRes = true;
-  // TODO
+  // TODO: Make this split mode aware
+  for (uint16_t ofs = 0; ofs < 0x2000; ofs += 128) {
+    for (uint16_t mem = 0; mem < 120; mem++) {
+      uint16_t addr = offs + mem + (page1 ? 0x2000 : 0x4000);
+      // The inverse makes sure everything gets cleared, right?
+      highWrite(addr, ram[addr], ~ram[addr]);
+    }
+  }
 }
 
 void full_graphics() {
@@ -166,7 +208,7 @@ unsigned short text_row_to_addr(unsigned char row) {
   unsigned short ab = (row >> 3) & 3;
   unsigned short cd = (row >> 1) & 3;
   unsigned short e = row & 1;
-  return 0x400 | (cd << 8) | (e << 7) | (ab << 5) | (ab << 3);
+  return (page1 ? 0x400 : 0x800) | (cd << 8) | (e << 7) | (ab << 5) | (ab << 3);
 }
 
 // This isn't any faster than the built in routine, once I got the rendering
@@ -226,10 +268,10 @@ void highWrite(unsigned short address, unsigned char val, unsigned char prv) {
                  ((val & 0x04) << 3) | ((val & 0x08) << 1) |
                  ((val & 0x10) >> 1) | ((val & 0x20) >> 3) |
                  ((val & 0x40) >> 5);
-  // TODO: Draw the bit on screen, but maybe 'delayed' by a couple cycles to batch
-  // updates better? Not sure, but it feels like maybe batching ought to be handled
-  // by the 6502 code for hires graphics (multiple memory writes are slow, so folks
-  // probably optimized for this?)
+  // TODO: Draw the bit on screen, but maybe 'delayed' by a couple cycles to
+  // batch updates better? Not sure, but it feels like maybe batching ought to
+  // be handled by the 6502 code for hires graphics (multiple memory writes are
+  // slow, so folks probably optimized for this?)
   // TODO: Maybe be color aware?
   // Monochome is MUCH easier (WOZ!!! Shakes fist, while also being impressed)
   tft.drawBitmap(
