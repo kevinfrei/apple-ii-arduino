@@ -2109,7 +2109,7 @@ void write8(unsigned short address, unsigned char value) {
   if (page < 0xC0) {
     if (page >= 0x04 && page < 0x08 && ram[address] != value) {
       screenWrite(address, value, ram[address]);
-    } else if (page >= 0x20 && page < 0x40 && ram[address] != value) {
+    } else if (page >= 0x20 && page < 0x60 && ram[address] != value) {
       highWrite(address, value, ram[address]);
     }
     ram[address] = value;

@@ -17,7 +17,11 @@ endif
 # Require cooling: 912, 960, 1008 (anything above 600 gets kinda warm)
 IN_SPEED=816
 IN_USB=serialhid
-IN_OPT=o3std
+# Os builds are faster because once you pop the cache, you're done.
+# Memory is slow, everything except your L1 cache is pretty slow. 
+# Welcome to modern hardware. I wonder if GCC will ever get that
+# particular message...
+IN_OPT=osstd
 IN_KEYS=en-us
 EXTRA_TIME_LOCAL=0
 BOARD_NAME=teensy40
@@ -28,8 +32,10 @@ SERIAL_PORT_PROTOCOL=serial
 PROJ_NAME=apple2
 BUILD_PATH=out
 
-# My custom flags
-# COMPILER_CPP_EXTRA_FLAGS=-flto
+# This slows down iteration time a bit, but results in builds running
+# ~20% faster AND the .hex file is 4% smaller.
+# COMPILER_CPP_EXTRA_FLAGS=-flto 
+# Helpful if you want to look at assembly: -g -save-temps
 
 USER_INCLUDES=-Iinclude
 USER_CPP_SRCS=\

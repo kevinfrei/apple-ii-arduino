@@ -153,19 +153,14 @@ volatile unsigned char keymem = 0;
 bool flash = false;
 unsigned char key_index = 0;
 const char to_type[] =
-  "0 HOME\r"
-//  "5 PRINT \"@@@@@@\"\r"
-  "10 FOR J=1 TO 19\r"
-  "15 PRINT \"\"\r"
-  "18 NEXT J\r"
-  "19 HGR\r"
-  "25 FOR I = 0 TO 139 STEP 2\r"
-  "26 HCOLOR=I - (INT(I / 7) * 7)\r"
-  "30 HPLOT 0,I TO 276,138 - I\r"
-  "33 HPLOT I * 2,0 TO 276 - (I * 2), 138\r"
-  "35 NEXT I\r"
-  "40 TEXT\r"
-  "50 END\r"
+  "0 HOME : FOR J=1 TO 19 : PRINT \"ABCD\" : NEXT J\r"
+  "10 HGR\r"
+  "20 FOR I=0 TO 79\r"
+  "30 HCOLOR=I - (INT(I / 8) * 8)\r"
+  "40 HPLOT 0,I*2 TO 279,I*2\r"
+  "50 NEXT I\r"
+  "60 FOR J=1 TO 2 : PRINT \"DONE\" : NEXT J\r"
+  "70 END\r"
   "RUN\r"
   ;
 const unsigned int num_chars = sizeof(to_type) / sizeof(char);

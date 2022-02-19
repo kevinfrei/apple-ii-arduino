@@ -72,12 +72,10 @@ unsigned short PC;
 unsigned char STP = 0xFD, A = 0x00, X = 0x00, Y = 0x00, SR = SR_FIXED_BITS;
 
 // Execution variables
-unsigned char opcode, opflags;
-unsigned short argument_addr;
+unsigned char opflags;
 
 // Temporary variables for flag generation
-unsigned char value8;
-unsigned short value16, value16_2, result;
+unsigned short value16, result;
 
 inline void setflags() {
   // Mask out affected flags
@@ -136,8 +134,28 @@ void init_machine() {
   STP = 0xFD;
 }
 
+uint32_t cycleCounter = 0;
+uint32_t lastus = 0;
+uint32_t lastCycle = 0;
 extern "C" void loop() {
-  debug_info(millis());
+  unsigned short argument_addr = 0;
+  unsigned char opcode, value8;
+  uint32_t us = micros();
+  uint32_t cycleTime = cycleCounter - lastCycle;
+  uint32_t loopTime = us - lastus;  
+  if (lastCycle && cycleTime > 9 && cycleTime > loopTime) {
+    // Slow us down to 1MHz
+    // This doesn't quite work right.
+    // What I really want is a mechanism that will let us "run fast" to
+    // enable slower screen operations to catch back up with the rest of
+    // the system.
+    // delayMicroseconds(cycleTime - loopTime);
+    lastCycle = cycleCounter;
+    lastus = us;
+  } else if (!lastCycle) {
+    lastCycle = cycleCounter;
+  }
+  debug_info(millis(), cycleCounter, cycleTime - loopTime);
   // Routines for hooking apple ][ monitor routines
   PC = program_hooks(PC);
 
@@ -153,14 +171,17 @@ extern "C" void loop() {
       break;
     case AD_ABS:
       argument_addr = read16(PC);
+      cycleCounter += 2;
       PC += 2;
       break;
     case AD_ABSX:
       argument_addr = read16(PC) + (unsigned short)X;
+      cycleCounter += 2 + !!((argument_addr & 0xFF00) != (PC & 0xFF00));
       PC += 2;
       break;
     case AD_ABSY:
       argument_addr = read16(PC) + (unsigned short)Y;
+      cycleCounter += 2 + !!((argument_addr & 0xFF00) != (PC & 0xFF00));
       PC += 2;
       break;
     case AD_IMM:
@@ -172,6 +193,7 @@ extern "C" void loop() {
         (argument_addr & 0xFF00) | ((argument_addr + 1) & 0x00FF); // Page wrap
       argument_addr = (unsigned short)read8(argument_addr) |
                       ((unsigned short)read8(value16) << 8);
+      cycleCounter += 2;
       PC += 2;
       break;
     case AD_INDX:
@@ -180,6 +202,7 @@ extern "C" void loop() {
         (argument_addr & 0xFF00) | ((argument_addr + 1) & 0x00FF); // Page wrap
       argument_addr = (unsigned short)read8(argument_addr) |
                       ((unsigned short)read8(value16) << 8);
+      cycleCounter += 4;
       break;
     case AD_INDY:
       argument_addr = (unsigned short)read8(PC++);
@@ -187,6 +210,7 @@ extern "C" void loop() {
         (argument_addr & 0xFF00) | ((argument_addr + 1) & 0x00FF); // Page wrap
       argument_addr = (unsigned short)read8(argument_addr) |
                       ((unsigned short)read8(value16) << 8);
+      cycleCounter += 3 + !!((argument_addr & 0xFF00) != (PC & 0xFF00));
       argument_addr += Y;
       break;
     case AD_REL:
@@ -195,15 +219,18 @@ extern "C" void loop() {
       break;
     case AD_ZPG:
       argument_addr = (unsigned short)read8(PC++);
+      cycleCounter++;
       break;
     case AD_ZPGX:
       argument_addr = ((unsigned short)read8(PC++) + (unsigned short)X) & 0xFF;
+      cycleCounter += 2;
       break;
     case AD_ZPGY:
       argument_addr = ((unsigned short)read8(PC++) + (unsigned short)Y) & 0xFF;
+      cycleCounter += 2;
       break;
   }
-
+  cycleCounter += 2;
   // opcodes
   switch (opcode) {
     // ADC
@@ -248,6 +275,7 @@ extern "C" void loop() {
       value16 = read8(argument_addr);
       result = value16 << 1;
       setflags();
+      cycleCounter += 2;
       write8(argument_addr, result & 0xFF);
       break;
     // BCC
@@ -356,6 +384,7 @@ extern "C" void loop() {
     case 0xD6:
     case 0xCE:
     case 0xDE:
+      cycleCounter += 2;
       value16 = (unsigned short)read8(argument_addr);
       result = value16 - 1;
       setflags();
@@ -390,6 +419,7 @@ extern "C" void loop() {
     case 0xF6:
     case 0xEE:
     case 0xFE:
+      cycleCounter += 2;
       value16 = (unsigned short)read8(argument_addr);
       result = value16 + 1;
       setflags();
@@ -409,11 +439,13 @@ extern "C" void loop() {
     case 0x4C:
     case 0x6C:
       PC = argument_addr;
+      cycleCounter -= 1; // I think this is right...
       break;
     // JSR
     case 0x20:
       push16(PC - 1);
       PC = argument_addr;
+      cycleCounter += 2;
       break;
     // LDA
     case 0xA9:
@@ -465,6 +497,7 @@ extern "C" void loop() {
       result = value8 >> 1;
       result |= (value8 & 0x1) ? 0x8000 : 0;
       setflags();
+      cycleCounter += 2;
       write8(argument_addr, result & 0xFF);
       break;
     // NOP
@@ -487,20 +520,24 @@ extern "C" void loop() {
     // PHA
     case 0x48:
       push8(A);
+      cycleCounter += 1;
       break;
     // PHP
     case 0x08:
       push8(SR | SR_BRK);
+      cycleCounter += 1;
       break;
     // PLA
     case 0x68:
       result = pull8();
       setflags();
       A = result;
+      cycleCounter += 2;
       break;
       // PLP
     case 0x28:
       SR = pull8() | SR_FIXED_BITS;
+      cycleCounter += 2;
       break;
     // ROL A
     case 0x2A:
@@ -517,6 +554,7 @@ extern "C" void loop() {
       value16 = (unsigned short)read8(argument_addr);
       result = (value16 << 1) | (SR & SR_CARRY);
       setflags();
+      cycleCounter += 2;
       write8(argument_addr, result & 0xFF);
       break;
     // ROR A
@@ -536,16 +574,19 @@ extern "C" void loop() {
       result = (value16 >> 1) | ((SR & SR_CARRY) << 7);
       result |= (value16 & 0x1) ? 0x8000 : 0;
       setflags();
+      cycleCounter += 1;
       write8(argument_addr, result & 0xFF);
       break;
     // RTI
     case 0x40:
       SR = pull8();
       PC = pull16();
+      cycleCounter += 4;
       break;
     // RTS
     case 0x60:
       PC = pull16() + 1;
+      cycleCounter += 4;
       break;
     // SBC
     case 0xE9:
@@ -581,6 +622,8 @@ extern "C" void loop() {
     case 0x99:
     case 0x81:
     case 0x91:
+      // There might need to be a minor adjustment for page crossed stuff for
+      // the clock counter
       write8(argument_addr, A);
       break;
     // STX

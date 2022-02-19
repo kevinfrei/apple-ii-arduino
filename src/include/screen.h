@@ -19,7 +19,7 @@ void writeCharacter(unsigned char row, unsigned char col, unsigned char val, uns
 unsigned short text_row_to_addr(unsigned char row);
 void screenScroll();
 void screenWrite(unsigned short address, unsigned char value, unsigned char prev);
-void debug_info(unsigned int ms);
+void debug_info(unsigned int ms, unsigned int cycles, int delayTime);
 void highWrite(unsigned short address, unsigned char val, unsigned char prv);
 void show_text();
 void show_graphics();

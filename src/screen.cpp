@@ -80,6 +80,7 @@ void show_text() {
       writeCharacter(row, col, ram[text_row_to_addr(row) + col], 0x20);
     }
   }
+  tft.fillRect(5, 225, 15, 15, ST77XX_GREEN);
 }
 
 void show_graphics() {
@@ -99,12 +100,13 @@ void show_graphics() {
     // TODO: optimize this, and make it splitmode aware
     for (uint16_t ofs = 0; ofs < 0x2000; ofs += 128) {
       for (uint16_t mem = 0; mem < 120; mem++) {
-        uint16_t addr = offs + mem + (page1 ? 0x2000 : 0x4000);
+        uint16_t addr = ofs + mem + (page1 ? 0x2000 : 0x4000);
         // The inverse makes sure everything gets cleared, right?
         highWrite(addr, ram[addr], ~ram[addr]);
       }
     }
   }
+  tft.fillRect(5, 225, 15, 15, ST77XX_RED);
 }
 
 void show_lores() {
@@ -117,6 +119,7 @@ void show_lores() {
       writeCharacter(row, col, ram[text_row_to_addr(row) + col], 0x00);
     }
   }
+  tft.fillRect(25, 225, 15, 15, ST77XX_MAGENTA);
 }
 
 void show_hires() {
@@ -125,21 +128,24 @@ void show_hires() {
   // TODO: Make this split mode aware
   for (uint16_t ofs = 0; ofs < 0x2000; ofs += 128) {
     for (uint16_t mem = 0; mem < 120; mem++) {
-      uint16_t addr = offs + mem + (page1 ? 0x2000 : 0x4000);
+      uint16_t addr = ofs + mem + (page1 ? 0x2000 : 0x4000);
       // The inverse makes sure everything gets cleared, right?
       highWrite(addr, ram[addr], ~ram[addr]);
     }
   }
+  tft.fillRect(25, 225, 15, 15, ST77XX_YELLOW);
 }
 
 void full_graphics() {
   splitMode = false;
   // TODO
+  tft.fillRect(45, 225, 15, 15, ST77XX_WHITE);
 }
 
 void split_graphics() {
   splitMode = true;
   // TODO
+  tft.fillRect(45, 225, 15, 15, ST77XX_BLACK);
 }
 
 void show_page1() {
@@ -320,12 +326,13 @@ void drawHex(const char* fmt,
   tft.print(buffer);
 }
 
-bufRect oA = {0}, oX = {0}, oY = {0}, oPC = {0}, oSR = {0}, oldIPS = {0};
+bufRect oA = {0}, oX = {0}, oY = {0}, oPC = {0}, oSR = {0}, oldIPS = {0}, oldDT ={0};
 unsigned int total = 0;
 unsigned int lastMs = 0;
 unsigned char oldA = 0, oldSTP = 0, oldX = 0, oldY = 0, oldSR = 0;
 unsigned char oldPC = 0;
-void debug_info(unsigned int ms) {
+unsigned int lastCycles;
+void debug_info(unsigned int ms, unsigned int cycles, int delayTime) {
   if (false && (oldA != A || oldX != X || oldY != Y)) {
     if (PC != oldPC) {
       oldPC = PC;
@@ -348,27 +355,12 @@ void debug_info(unsigned int ms) {
       drawHex("sr.%02x", 244, 26, SR, &oSR);
     }
   }
-  if (ms - lastMs >= 3000) {
+  if (ms - lastMs >= 1000) {
+    drawHex("kCPS: %d", 2, 18, (cycles - lastCycles) >> 10, &oldIPS);
+    drawHex("delay %d", 2, 239, delayTime, &oldDT);
     lastMs = ms;
-    // unsigned int now = micros();
-    // drawHex("IPS: %d", 2, 26, total, &oldIPS);
-    // unsigned int elapsed = micros() - now;
-    // drawHex("draw %d", 2, 26, elapsed, &oldIPS);
+    lastCycles = cycles;
     total = 0;
-    if (rotateColors) {
-      switch ((ms / 3000) % 3) {
-        case 0:
-          theColor = ST77XX_WHITE;
-          break;
-        case 1:
-          theColor = amber;
-          break;
-        default:
-        case 2:
-          theColor = green;
-          break;
-      }
-    }
   }
   total++;
 }
