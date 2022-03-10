@@ -11,10 +11,10 @@
 // #define ADAFRUIT_1_13
 
 // Switch these to whatever you need
-const uint8_t BACKLIGHT_PIN = 17;
-const uint8_t TFT_CS = 8;
-const uint8_t TFT_DC = 15;
-const uint8_t TFT_RST = 6;
+const uint8_t BACKLIGHT_PIN = 18;
+const uint8_t TFT_CS = 10;
+const uint8_t TFT_DC = 20;
+const uint8_t TFT_RST = 21;
 // This is the fastest speed that worked
 // I can turn it up to 72MHz, but that doesn't seem any faster :/
 const uint32_t SPI_SPEED = 60000000;

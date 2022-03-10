@@ -34,7 +34,7 @@ BUILD_PATH=out
 
 # This slows down iteration time a bit, but results in builds running
 # ~20% faster AND the .hex file is 4% smaller.
-# COMPILER_CPP_EXTRA_FLAGS=-flto 
+COMPILER_CPP_EXTRA_FLAGS=-flto 
 # Helpful if you want to look at assembly: -g -save-temps
 
 USER_INCLUDES=-Iinclude
