@@ -1,3 +1,4 @@
+#include <Adafruit_GFX_Buffer.h>
 #include <Adafruit_ST7789.h>
 #include <stdint.h>
 
@@ -21,7 +22,8 @@ const uint32_t SPI_SPEED = 60000000;
 
 // TODO: Make this behave better. Batching updates would probably really improve
 // performance
-Adafruit_ST7789 tft(TFT_CS, TFT_DC, TFT_RST);
+Adafruit_ST7789 underlying_display(TFT_CS, TFT_DC, TFT_RST);
+Adafruit_GFX_Buffer<Adafruit_ST7789>* tft;
 boolean backlight_on = false;
 
 void set_backlight(bool turnOn) {
@@ -74,13 +76,14 @@ void show_text() {
   }
   textMode = true;
   // TODO: Maybe wait an instruction or two, just to be safe?
-  tft.fillRect(X_OFFSET, Y_OFFSET, 280, 192, ST77XX_BLACK);
+  tft->fillRect(X_OFFSET, Y_OFFSET, 280, 192, ST77XX_BLACK);
   for (uint8_t row = 0; row < 24; row++) {
     for (uint8_t col = 0; col < 40; col++) {
       writeCharacter(row, col, ram[text_row_to_addr(row) + col], 0x20);
     }
   }
-  tft.fillRect(5, 225, 15, 15, ST77XX_GREEN);
+  tft->fillRect(5, 225, 15, 15, ST77XX_GREEN);
+  tft->display();
 }
 
 void show_graphics() {
@@ -90,7 +93,7 @@ void show_graphics() {
   textMode = false;
   // TODO: deal with part of the screen
   if (lowRes) {
-    tft.fillRect(X_OFFSET, Y_OFFSET, 280, 192, ST77XX_BLACK);
+    tft->fillRect(X_OFFSET, Y_OFFSET, 280, 192, ST77XX_BLACK);
     for (uint8_t row = 0; row < 24; row++) {
       for (uint8_t col = 0; col < 40; col++) {
         writeCharacter(row, col, ram[text_row_to_addr(row) + col], 0x20);
@@ -106,20 +109,22 @@ void show_graphics() {
       }
     }
   }
-  tft.fillRect(5, 225, 15, 15, ST77XX_RED);
+  tft->fillRect(5, 225, 15, 15, ST77XX_RED);
+  tft->display();
 }
 
 void show_lores() {
   lowRes = true;
   hiRes = false;
   // TODO: Maybe wait an instruction or two, just to be safe?
-  tft.fillRect(X_OFFSET, Y_OFFSET, 280, (splitMode ? 160 : 192), ST77XX_BLACK);
+  tft->fillRect(X_OFFSET, Y_OFFSET, 280, (splitMode ? 160 : 192), ST77XX_BLACK);
   for (uint8_t row = 0; row < (splitMode ? 20 : 24); row++) {
     for (uint8_t col = 0; col < 40; col++) {
       writeCharacter(row, col, ram[text_row_to_addr(row) + col], 0x00);
     }
   }
-  tft.fillRect(25, 225, 15, 15, ST77XX_MAGENTA);
+  tft->fillRect(25, 225, 15, 15, ST77XX_MAGENTA);
+  tft->display();
 }
 
 void show_hires() {
@@ -133,19 +138,22 @@ void show_hires() {
       highWrite(addr, ram[addr], ~ram[addr]);
     }
   }
-  tft.fillRect(25, 225, 15, 15, ST77XX_YELLOW);
+  tft->fillRect(25, 225, 15, 15, ST77XX_YELLOW);
+  tft->display();
 }
 
 void full_graphics() {
   splitMode = false;
   // TODO
-  tft.fillRect(45, 225, 15, 15, ST77XX_WHITE);
+  tft->fillRect(45, 225, 15, 15, ST77XX_WHITE);
+  tft->display();
 }
 
 void split_graphics() {
   splitMode = true;
   // TODO
-  tft.fillRect(45, 225, 15, 15, ST77XX_BLACK);
+  tft->fillRect(45, 225, 15, 15, ST77XX_BLACK);
+  tft->display();
 }
 
 void show_page1() {
@@ -167,18 +175,25 @@ void writeCharacter(uint8_t row, uint8_t col, uint8_t val, uint8_t prev) {
     // Let's try to minimize the amount of bitmap updating
     if (val == prev)
       return;
+#if defined(TRIM_CHARS)
     uint8_t out[8];
     uint16_t x, y, w, h;
     // TODO: Maybe memoize this function?
-    trimChar(&fontInfo[val * 8], &fontInfo[prev * 8], &out[0], &x, &y, &w, &h);
-    tft.drawBitmap(col * 7 + x, row * 8 + y, out, w, h, ST77XX_BLACK, theColor);
+    // trimChar(&fontInfo[val * 8], &fontInfo[prev * 8], &out[0], &x, &y, &w,
+    // &h);
+    tft->drawBitmap(
+      col * 7 + x, row * 8 + y, out, w, h, ST77XX_BLACK, theColor);
+#else
+    tft->drawBitmap(
+      col * 7, row * 8, &fontInfo[val * 8], 7, 8, ST77XX_BLACK, theColor);
+#endif
   } else if (lowRes) {
     if ((val & 0xF) != (prev & 0xF)) {
-      tft.fillRect(
+      tft->fillRect(
         X_OFFSET + col * 7, Y_OFFSET + row * 8, 7, 4, loClrs[val & 0xF]);
     }
     if ((val >> 4) != (prev >> 4)) {
-      tft.fillRect(
+      tft->fillRect(
         X_OFFSET + col * 7, Y_OFFSET + 4 + row * 8, 7, 4, loClrs[val >> 4]);
     }
   }
@@ -188,16 +203,17 @@ void init_screen() {
   pinMode(BACKLIGHT_PIN, OUTPUT);
   set_backlight(true);
 #if defined(ADAFRUIT_1_14)
-  tft.init(135, 240);
+  tft = new Adafruit_GFX_Buffer<Adafruit_ST7789>(135, 240, underlying_display);
 #elif defined(ADAFRUIT_2_0)
-  tft.init(240, 320);
+  tft = new Adafruit_GFX_Buffer<Adafruit_ST7789>(240, 320, underlying_display);
 #else
 #error Sorry, you need to pick a screen
 #endif
-  tft.setSPISpeed(SPI_SPEED);
-  tft.setRotation(1);
-  tft.setFont(&FreeSans12pt7b);
-  tft.fillScreen(beige);
+  tft->setSPISpeed(SPI_SPEED);
+  tft->setRotation(1);
+  tft->setFont(&FreeSans12pt7b);
+  tft->fillScreen(beige);
+  tft->display();
 }
 
 void clear_screen() {
@@ -205,7 +221,8 @@ void clear_screen() {
   for (unsigned char offs = 0; offs < 8; offs++) {
     memset(&ram[0x400 + offs * 128], BLANK_CHAR, 120); // Draw spaces everywhere
   }
-  tft.fillRect(12, 16, 296, 208, ST77XX_BLACK);
+  tft->fillRect(12, 16, 296, 208, ST77XX_BLACK);
+  tft->display();
 }
 
 unsigned short text_row_to_addr(unsigned char row) {
@@ -242,6 +259,7 @@ void screenScroll() {
       writeCharacter(23, col, BLANK_CHAR, c);
     }
   }
+  tft->display();
 }
 
 inline uint8_t hiResAddrToRow(uint16_t addr) {
@@ -280,8 +298,9 @@ void highWrite(unsigned short address, unsigned char val, unsigned char prv) {
   // slow, so folks probably optimized for this?)
   // TODO: Maybe be color aware?
   // Monochome is MUCH easier (WOZ!!! Shakes fist, while also being impressed)
-  tft.drawBitmap(
+  tft->drawBitmap(
     X_OFFSET + col * 7, Y_OFFSET + row, &flip, 7, 1, theColor, ST77XX_BLACK);
+  tft->display();
 }
 
 void screenWrite(unsigned short address,
@@ -308,6 +327,7 @@ void screenWrite(unsigned short address,
   // If not bell character << This is bad for graphics mode :)
   // if (value != 0x87)
   writeCharacter(row, col, value, prev);
+  tft->display();
 }
 char buffer[40];
 
@@ -319,14 +339,15 @@ void drawHex(const char* fmt,
   sprintf(buffer, fmt, val);
   short x1, y1;
   unsigned short w, h;
-  tft.getTextBounds(buffer, x, y, &x1, &y1, &w, &h);
-  tft.fillRect(oldBuf->x1, oldBuf->y1, oldBuf->w, oldBuf->h, ST77XX_BLACK);
+  tft->getTextBounds(buffer, x, y, &x1, &y1, &w, &h);
+  tft->fillRect(oldBuf->x1, oldBuf->y1, oldBuf->w, oldBuf->h, ST77XX_BLACK);
   *oldBuf = {x1, y1, w, h};
-  tft.setCursor(x, y);
-  tft.print(buffer);
+  tft->setCursor(x, y);
+  tft->print(buffer);
 }
 
-bufRect oA = {0}, oX = {0}, oY = {0}, oPC = {0}, oSR = {0}, oldIPS = {0}, oldDT ={0};
+bufRect oA = {0}, oX = {0}, oY = {0}, oPC = {0}, oSR = {0}, oldIPS = {0},
+        oldDT = {0};
 unsigned int total = 0;
 unsigned int lastMs = 0;
 unsigned char oldA = 0, oldSTP = 0, oldX = 0, oldY = 0, oldSR = 0;
@@ -356,7 +377,8 @@ void debug_info(unsigned int ms, unsigned int cycles, int delayTime) {
     }
   }
   if (ms - lastMs >= 1000) {
-    Serial.printf("kCPS: %d\ndelay %d\n", (cycles - lastCycles) >> 10, delayTime);
+    Serial.printf(
+      "kCPS: %d\ndelay %d\n", (cycles - lastCycles) >> 10, delayTime);
     drawHex("kCPS: %d", 2, 18, (cycles - lastCycles) >> 10, &oldIPS);
     drawHex("delay %d", 2, 239, delayTime, &oldDT);
     lastMs = ms;
@@ -364,4 +386,5 @@ void debug_info(unsigned int ms, unsigned int cycles, int delayTime) {
     total = 0;
   }
   total++;
+  tft->display();
 }

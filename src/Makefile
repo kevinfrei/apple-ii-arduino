@@ -1,7 +1,7 @@
 # Some simple details
 ifeq ($(OS),Windows_NT)
 	ARD=${HOME}/AppData/Local
-	SERIAL_PORT=COM8
+	SERIAL_PORT=COM15
 	RUNTIME_HARDWARE_PATH=c:/PROGRA~2/Arduino/hardware/tools
 	CMD_PATH=${RUNTIME_HARDWARE_PATH}
 else ifeq ($(shell uname -s), Darwin)
