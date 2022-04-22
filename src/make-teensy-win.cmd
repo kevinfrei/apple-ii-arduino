@@ -1,1 +1,1 @@
-node libs\GenMakefile\ar2mak.js C:\PROGRA~2\Arduino\hardware\teensy\avr libs/GFX libs/ST77XX libs/BusIO > teensy-win.inc
+node libs\GenMakefile\ar2mak.js C:\PROGRA~2\Arduino\hardware\teensy\avr libs/GFX libs/ST77XX libs/BusIO libs/GFX_Buffer > teensy-win.inc

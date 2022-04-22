@@ -153,14 +153,18 @@ volatile unsigned char keymem = 0;
 bool flash = false;
 unsigned char key_index = 0;
 const char to_type[] =
-  "0 HOME : FOR J=1 TO 19 : PRINT \"ABCD\" : NEXT J\r"
-  "10 HGR\r"
-  "20 FOR I=0 TO 79\r"
-  "30 HCOLOR=I - (INT(I / 8) * 8)\r"
-  "40 HPLOT 0,I*2 TO 279,I*2\r"
-  "50 NEXT I\r"
-  "60 FOR J=1 TO 2 : PRINT \"DONE\" : NEXT J\r"
-  "70 END\r"
+  "10 DIM C : HGR\r"
+  "20 FOR I=0 TO 159\r"
+  "30 C=C+1:IF C = 8 THEN C = 1\r"
+  "40 HCOLOR=C\r"
+  "50 HPLOT 0,I TO 279,159-I\r"
+  "60 NEXT I\r"
+  "70 FOR I=279 TO 0 STEP -1\r"
+  "80 C=C+1:IF C = 8 THEN C = 1\r"
+  "90 HCOLOR=C\r"
+  "100 HPLOT I,0 TO 279 - I,159\r"
+  "110 NEXT I\r"
+  "120 GOTO 20\r"
   "RUN\r"
   ;
 const unsigned int num_chars = sizeof(to_type) / sizeof(char);
@@ -171,7 +175,7 @@ unsigned int last_kb = 0;
 unsigned char keyboard_read() {
   unsigned int ms = millis();
   kb_count++;
-  if (ms - last_kb > 40) {
+  if (ms - last_kb > 50) {
     // Type a character
     last_kb = ms;
     if (key_index < num_chars) {

@@ -34,7 +34,7 @@ BUILD_PATH=out
 
 # This slows down iteration time a bit, but results in builds running
 # ~20% faster AND the .hex file is 4% smaller.
-# COMPILER_CPP_EXTRA_FLAGS=-flto 
+COMPILER_CPP_EXTRA_FLAGS=-flto 
 # Helpful if you want to look at assembly: -g -save-temps
 
 USER_INCLUDES=-Iinclude
@@ -55,6 +55,7 @@ LIB_SPI=1
 LIB_GFX=1
 LIB_ST77XX=1
 LIB_WIRE=1
+LIB_GFX_BUFFER=1
 
 ifeq ($(OS),Windows_NT)
 include teensy-win.inc
