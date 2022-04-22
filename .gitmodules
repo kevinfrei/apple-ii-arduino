@@ -10,3 +10,6 @@
 [submodule "APPLEII/libs/ST77XX"]
 	path = src/libs/ST77XX
 	url = https://github.com/adafruit/Adafruit-ST7735-Library.git
+[submodule "src/libs/GFX_Buffer"]
+	path = src/libs/GFX_Buffer
+	url = https://github.com/vjmuzik/Adafruit_GFX_Buffer.git
