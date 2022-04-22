@@ -1,6 +1,7 @@
 ﻿// μ6502 - Barebones 6502 Emulator By Damian Peckett
 // dpeckett.com, <damian@pecke.tt>
 #include <Arduino.h>
+#include <usb_serial.h>
 
 #include "hooks.h"
 #include "memory.h"
@@ -137,6 +138,7 @@ void init_machine() {
 uint32_t cycleCounter = 0;
 uint32_t lastus = 0;
 uint32_t lastCycle = 0;
+
 extern "C" void loop() {
   unsigned short argument_addr = 0;
   unsigned char opcode, value8;

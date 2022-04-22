@@ -25,6 +25,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 All firmware is property of Apple Computer and is recreated here for
 historical purposes only.
 */
+#include <Arduino.h>
+#include <usb_serial.h>
 #include <stdint.h>
 
 #include "cassette.h"
@@ -35,7 +37,7 @@ historical purposes only.
 #include "speaker.h"
 
 extern "C" void setup() {
-  // Serial.begin(115200);
+  Serial.begin(115200);
   clear_screen();
   speaker_begin();
   cassette_begin();

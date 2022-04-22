@@ -356,6 +356,7 @@ void debug_info(unsigned int ms, unsigned int cycles, int delayTime) {
     }
   }
   if (ms - lastMs >= 1000) {
+    Serial.printf("kCPS: %d\ndelay %d\n", (cycles - lastCycles) >> 10, delayTime);
     drawHex("kCPS: %d", 2, 18, (cycles - lastCycles) >> 10, &oldIPS);
     drawHex("delay %d", 2, 239, delayTime, &oldDT);
     lastMs = ms;
