@@ -10,20 +10,61 @@
 
 #define ADAFRUIT_2_0
 // #define ADAFRUIT_1_13
+#define TRIM_CHARS
+//#define USE_BUFFER
 
+#if defined(ADAFRUIT_2_0)
+
+constexpr uint16_t SCRW = 240;
+constexpr uint16_t SCRH = 320;
 // Switch these to whatever you need
-const uint8_t BACKLIGHT_PIN = 18;
-const uint8_t TFT_CS = 10;
-const uint8_t TFT_DC = 20;
-const uint8_t TFT_RST = 21;
+const int8_t BACKLIGHT_PIN = 18;
+const int8_t TFT_CS = 10;
+const int8_t TFT_DC = 20;
+const int8_t TFT_RST = 21;
+
+#elif defined(ADAFRUIT_1_13)
+
+constexpr uint16_t SCRW = 135;
+constexpr uint16_t SCRH = 240;
+
+#endif
+
+#if defined(USE_BUFFER)
+typedef Adafruit_GFX_Buffer<Adafruit_ST7789> MyDisplay;
+MyDisplay* MakeDisplay() {
+  MyDisplay* res = new Adafruit_GFX_Buffer<Adafruit_ST7789>{
+    SCRW, SCRH, Adafruit_ST7789{TFT_CS, TFT_DC, TFT_RST}};
+  res->init(SCRW, SCRH);
+  return res;
+};
+
+#else
+
+class MyDisplay : public Adafruit_ST7789 {
+ public:
+  MyDisplay(uint8_t cs, uint8_t dc, uint8_t rst)
+    : Adafruit_ST7789(cs, dc, rst) {
+    this->init(SCRW, SCRH);
+  }
+  bool display() {
+    return true;
+  }
+};
+
+MyDisplay* MakeDisplay() {
+  return new MyDisplay(TFT_CS, TFT_DC, TFT_RST);
+}
+
+#endif
+
 // This is the fastest speed that worked
 // I can turn it up to 72MHz, but that doesn't seem any faster :/
 const uint32_t SPI_SPEED = 60000000;
 
 // TODO: Make this behave better. Batching updates would probably really improve
 // performance
-Adafruit_ST7789 underlying_display(TFT_CS, TFT_DC, TFT_RST);
-Adafruit_GFX_Buffer<Adafruit_ST7789>* tft;
+MyDisplay* tft = MakeDisplay();
 boolean backlight_on = false;
 
 void set_backlight(bool turnOn) {
@@ -179,13 +220,17 @@ void writeCharacter(uint8_t row, uint8_t col, uint8_t val, uint8_t prev) {
     uint8_t out[8];
     uint16_t x, y, w, h;
     // TODO: Maybe memoize this function?
-    // trimChar(&fontInfo[val * 8], &fontInfo[prev * 8], &out[0], &x, &y, &w,
-    // &h);
+    trimChar(&fontInfo[val * 8], &fontInfo[prev * 8], &out[0], &x, &y, &w, &h);
     tft->drawBitmap(
       col * 7 + x, row * 8 + y, out, w, h, ST77XX_BLACK, theColor);
 #else
-    tft->drawBitmap(
-      col * 7, row * 8, &fontInfo[val * 8], 7, 8, ST77XX_BLACK, theColor);
+    tft->drawBitmap(col * 7 + X_OFFSET,
+                    row * 8 + Y_OFFSET,
+                    &fontInfo[val * 8],
+                    7,
+                    8,
+                    ST77XX_BLACK,
+                    theColor);
 #endif
   } else if (lowRes) {
     if ((val & 0xF) != (prev & 0xF)) {
@@ -203,9 +248,13 @@ void init_screen() {
   pinMode(BACKLIGHT_PIN, OUTPUT);
   set_backlight(true);
 #if defined(ADAFRUIT_1_14)
-  tft = new Adafruit_GFX_Buffer<Adafruit_ST7789>(135, 240, underlying_display);
+  // tft = new Adafruit_GFX_Buffer<Adafruit_ST7789>(135, 240,
+  // underlying_display);
+  tft->init(135, 240);
 #elif defined(ADAFRUIT_2_0)
-  tft = new Adafruit_GFX_Buffer<Adafruit_ST7789>(240, 320, underlying_display);
+  // tft = &underlying_display;// new Adafruit_GFX_Buffer<Adafruit_ST7789>(240,
+  // 320, underlying_display);
+  tft->init(240, 320);
 #else
 #error Sorry, you need to pick a screen
 #endif

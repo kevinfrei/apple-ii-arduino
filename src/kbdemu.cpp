@@ -175,7 +175,7 @@ unsigned int last_kb = 0;
 unsigned char keyboard_read() {
   unsigned int ms = millis();
   kb_count++;
-  if (ms - last_kb > 50) {
+  if (ms - last_kb > 75) {
     // Type a character
     last_kb = ms;
     if (key_index < num_chars) {
